@@ -77,7 +77,16 @@ $functions = array(
         'type' => 'write',
         'ajax' => true,
         'capabilities' => 'mod/folder:managefiles'
-    )
+    ),
+    'local_course_add_new_course_module_page' => array(
+        'classname' => 'local_sync_service_external',
+        'methodname' => 'local_sync_service_add_new_course_module_page',
+        'classpath' => 'local/sync_service/externallib.php',
+        'description' => 'Add course module Page',
+        'type' => 'write',
+        'ajax' => true,
+        'capabilities' => 'mod/page:addinstance',
+    ),
 
 
 );
@@ -87,6 +96,7 @@ $services = array(
         'functions' => array(
             'local_course_add_new_section',
             'local_course_add_new_course_module_url',
+            'local_course_add_new_course_module_page',
             'local_course_add_new_course_module_resource',
             'local_course_move_module_to_specific_position',
             'local_course_add_new_course_module_directory',

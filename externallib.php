@@ -23,6 +23,18 @@ require_once($CFG->dirroot . '/course/lib.php');
 
 defined('MOODLE_INTERNAL') || die();
 
+
+
+function debug($data) {
+    $output = $data;
+    if (is_array($output))
+        $output = implode(',', $output);
+
+    #echo "<script>console.log('Debug Objects: " . $output . "' );</script>";
+    echo "Debug Objects: " . $output . "";
+}
+
+
 /**
  * Class which contains the implementations of the added functions.
  *
@@ -537,5 +549,119 @@ class local_sync_service_external extends external_api {
                 )
         );
     }
+
+    /**
+     * Defines the necessary method parameters.
+     * @return external_function_parameters
+     */
+    public static function local_sync_service_add_new_course_module_page_parameters() {
+        return new external_function_parameters(
+            array(
+                'courseid' => new external_value( PARAM_TEXT, 'id of course' ),
+                'sectionnum' => new external_value( PARAM_TEXT, 'relative number of the section' ),
+                'urlname' => new external_value( PARAM_TEXT, 'displayed mod name' ),
+                'content' => new external_value( PARAM_TEXT, 'Content to insert' ),
+                'time' => new external_value( PARAM_TEXT, 'defines the mod. visibility', VALUE_DEFAULT, null ),
+                'visible' => new external_value( PARAM_TEXT, 'defines the mod. visibility' ),
+                'beforemod' => new external_value( PARAM_TEXT, 'mod to set before', VALUE_DEFAULT, null ),
+            )
+        );
+    }
+
+
+    /**
+     * Method to create a new course module containing a url.
+     *
+     * @param $courseid The course id.
+     * @param $sectionnum The number of the section inside the course.
+     * @param $urlname Displayname of the Module.
+     * @param $content Content to publish.
+     * @param $time availability time.
+     * @param $visible visible for course members.
+     * @param $beforemod Optional parameter, a Module where the new Module should be placed before.
+     * @return $update Message: Successful and $cmid of the new Module.
+     */
+    public static function local_sync_service_add_new_course_module_page($courseid, $sectionnum, $urlname, $content, $time = null, $visible, $beforemod = null) {
+        global $DB, $CFG;
+        require_once($CFG->dirroot . '/mod/' . '/page' . '/lib.php');
+
+        debug("local_sync_service_add_new_course_module_page");
+
+
+        // Parameter validation.
+        $params = self::validate_parameters(
+            self::local_sync_service_add_new_course_module_page_parameters(),
+            array(
+                'courseid' => $courseid,
+                'sectionnum' => $sectionnum,
+                'urlname' => $urlname,
+                'content' => $content,
+                'time' => $time,
+                'visible' => $visible,
+                'beforemod' => $beforemod,
+            )
+        );
+
+        // Ensure the current user has required permission in this course.
+        $context = context_course::instance($params['courseid']);
+        self::validate_context($context);
+
+
+        // Required permissions.
+        require_capability('mod/page:addinstance', $context);
+
+        debug("prepare add instance");
+
+        $instance = new \stdClass();
+        $instance->course = $params['courseid'];
+        $instance->name = $params['urlname'];
+        $instance->intro = null;
+        $instance->introformat = \FORMAT_HTML;   //or FORMAT_HTML
+        $instance->page['format'] = PARAM_TEXT;
+        $instance->page = array('text' => $content, 'itemid' => false);
+        debug("prepare add instance 1.5");
+        $instance->id = page_add_instance($instance, $instance);
+
+        $modulename = 'content';  #TODO
+
+        debug("prepare add instance 2");
+
+        $cm = new \stdClass();
+        $cm->course     = $params['courseid'];
+        $cm->module     = $DB->get_field( 'modules', 'id', array('name' => $modulename) );
+        $cm->instance   = $instance->id;
+        $cm->section    = $params['sectionnum'];
+        if (!is_null($params['time'])) {
+            $cm->availability = "{\"op\":\"&\",\"c\":[{\"type\":\"date\",\"d\":\">=\",\"t\":" . $params['time'] . "}],\"showc\":[" . $params['visible'] . "]}";
+        } else if ( $params['visible'] === 'false' ) {
+            $cm->visible = 0;
+        }
+        debug("prepare add course module");
+        $cm->id = add_course_module( $cm );
+        $cmid = $cm->id;
+        debug("prepare add to section");
+
+        $section->id = course_add_cm_to_section($params['courseid'], $cmid, $params['sectionnum'], $params['beforemod']);
+
+        $update = [
+            'message' => 'Successful',
+            'id' => $cmid,
+        ];
+        return $update;
+    }
+
+    /**
+     * Obtains the Parameter which will be returned.
+     * @return external_description
+     */
+    public static function local_sync_service_add_new_course_module_page_returns() {
+        return new external_single_structure(
+            array(
+                'message' => new external_value( PARAM_TEXT, 'if the execution was successful' ),
+                'id' => new external_value( PARAM_TEXT, 'cmid of the new module' ),
+            )
+        );
+    }
+
 }
 
