@@ -192,7 +192,7 @@ class local_sync_service_external extends external_api {
         $cm->id = add_course_module( $cm );
         $cmid = $cm->id;
 
-        $section->id = course_add_cm_to_section($params['courseid'], $cmid, $params['sectionnum'], $params['beforemod']);
+        $sectionid = course_add_cm_to_section($params['courseid'], $cmid, $params['sectionnum'], $params['beforemod']);
 
         $update = [
             'message' => 'Successful',
@@ -294,7 +294,7 @@ class local_sync_service_external extends external_api {
         $instance->files = $params['itemid'];
         $instance->id = resource_add_instance($instance, null);
 
-        $section->id = course_add_cm_to_section($params['courseid'], $cmid, $params['sectionnum'], $params['beforemod']);
+        $sectionid = course_add_cm_to_section($params['courseid'], $cmid, $params['sectionnum'], $params['beforemod']);
 
         $update = [
             'message' => 'Successful',
@@ -465,7 +465,7 @@ class local_sync_service_external extends external_api {
         $instance->files = $params['itemid'];
         $instance->id = folder_add_instance($instance, null);
 
-        $section->id = course_add_cm_to_section($params['courseid'], $cmid, $params['sectionnum'], $params['beforemod']);
+        $sectionid = course_add_cm_to_section($params['courseid'], $cmid, $params['sectionnum'], $params['beforemod']);
 
         $update = [
             'message' => 'Successful',
@@ -610,43 +610,49 @@ class local_sync_service_external extends external_api {
         // Required permissions.
         require_capability('mod/page:addinstance', $context);
 
-        debug("prepare add instance");
-
-        $instance = new \stdClass();
-        $instance->course = $params['courseid'];
-        $instance->name = $params['urlname'];
-        $instance->intro = null;
-        $instance->introformat = \FORMAT_HTML;   //or FORMAT_HTML
-        $instance->page['format'] = PARAM_TEXT;
-        $instance->page = array('text' => $content, 'itemid' => false);
-        debug("prepare add instance 1.5");
-        $instance->id = page_add_instance($instance, $instance);
-
-        $modulename = 'content';  #TODO
-
-        debug("prepare add instance 2");
+        debug("prepare add course module");
+        $modulename = 'page';  #TODO
 
         $cm = new \stdClass();
         $cm->course     = $params['courseid'];
         $cm->module     = $DB->get_field( 'modules', 'id', array('name' => $modulename) );
-        $cm->instance   = $instance->id;
+        //$cm->instance   = $instance->id;
         $cm->section    = $params['sectionnum'];
         if (!is_null($params['time'])) {
             $cm->availability = "{\"op\":\"&\",\"c\":[{\"type\":\"date\",\"d\":\">=\",\"t\":" . $params['time'] . "}],\"showc\":[" . $params['visible'] . "]}";
         } else if ( $params['visible'] === 'false' ) {
             $cm->visible = 0;
         }
-        debug("prepare add course module");
+
         $cm->id = add_course_module( $cm );
         $cmid = $cm->id;
-        debug("prepare add to section");
+        debug("course module added $cmid\n");
 
-        $section->id = course_add_cm_to_section($params['courseid'], $cmid, $params['sectionnum'], $params['beforemod']);
+        $instance = new \stdClass();
+        $instance->course = $params['courseid'];
+        $instance->name = $params['urlname'];
+        $instance->intro = null;
+        $instance->introformat = \FORMAT_HTML;   //or FORMAT_HTML
+        $instance->intro = '<p>'.$params['urlname'].'</p>';
+        $instance->page = array('format' => \FORMAT_MARKDOWN,'text' => $content, 'itemid' => false);
+        $instance->coursemodule = $cmid;
+        $instance->id = page_add_instance($instance, $instance);
+
+
+        debug("prepare add to section\n");
+        print_r ($params, false);
+
+        $secsectionid = course_add_cm_to_section($params['courseid'], $cmid, $params['sectionnum'], $params['beforemod']);
+
+        debug("prepare add to section done $sectionid\n");
 
         $update = [
             'message' => 'Successful',
             'id' => $cmid,
         ];
+
+        debug("prepare add to section done2\n");
+
         return $update;
     }
 
