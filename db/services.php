@@ -96,6 +96,15 @@ $functions = array(
         'ajax' => true,
         'capabilities' => 'mod/book:addinstance',
     ),
+    'local_course_import_html_in_book' => array(
+        'classname' => 'local_sync_service_external',
+        'methodname' => 'local_sync_service_import_html_in_book',
+        'classpath' => 'local/sync_service/externallib.php',
+        'description' => 'Upload chapters in book',
+        'type' => 'write',
+        'ajax' => true,
+        'capabilities' => 'booktool/importhtml:import',
+    ),
 
 
 );
@@ -107,6 +116,7 @@ $services = array(
             'local_course_add_new_course_module_url',
             'local_course_add_new_course_module_page',
             'local_course_add_new_course_module_book',
+            'local_course_import_html_in_book',
             'local_course_add_new_course_module_resource',
             'local_course_move_module_to_specific_position',
             'local_course_add_new_course_module_directory',

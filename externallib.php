@@ -656,7 +656,6 @@ class local_sync_service_external extends external_api {
         );
     }
 
-    //
 
     /**
      * Defines the necessary method parameters.
@@ -696,7 +695,6 @@ class local_sync_service_external extends external_api {
 
         debug("local_sync_service_add_new_course_module_book");
 
-
         // Parameter validation.
         $params = self::validate_parameters(
             self::local_sync_service_add_new_course_module_book_parameters(),
@@ -715,9 +713,9 @@ class local_sync_service_external extends external_api {
         $context = context_course::instance($params['courseid']);
         self::validate_context($context);
 
-
         // Required permissions.
         require_capability('mod/book:addinstance', $context);
+
 
         $instance = new \stdClass();
         $instance->course = $params['courseid'];
@@ -725,15 +723,11 @@ class local_sync_service_external extends external_api {
         $instance->introformat = \FORMAT_HTML;
         $instance->completionexpected=null; //todo
         $instance->intro = '<p>'.$params['urlname'].'</p>';
-        //$instance->book = array('format' => \FORMAT_MARKDOWN,'text' => $content, 'itemid' => false);
-        //$instance->coursemodule = $cmid;
         $instance->visible=1;
         $instance->id = book_add_instance($instance, null);
 
         debug("added book $instance->id");
 
-
-        debug("prepare add course module");
         $modulename = 'book';
         $cm = new \stdClass();
         $cm->course     = $params['courseid'];
@@ -770,6 +764,90 @@ class local_sync_service_external extends external_api {
             array(
                 'message' => new external_value( PARAM_TEXT, 'if the execution was successful' ),
                 'id' => new external_value( PARAM_TEXT, 'cmid of the new module' ),
+            )
+        );
+    }
+//
+
+
+    /**
+     * Defines the necessary method parameters.
+     * @return external_function_parameters
+     */
+    public static function local_sync_service_import_html_in_book_parameters() {
+        return new external_function_parameters(
+            array(
+                'cmid' => new external_value( PARAM_TEXT, 'course module id of book' ),
+                'itemid' => new external_value( PARAM_TEXT, 'itemid containing preloaded zip file to import in book' ),
+                'type' => new external_value( PARAM_TEXT, 'type (typezipdirs or typezipfiles)' )
+            )
+        );
+    }
+
+
+    /**
+     * Method to upload ZIP file in book so it appears as chapters in Moodle
+     *
+     * @param $cmid Course module id
+     * @param $itemid Item id
+     * @param $type Type of import
+     * @return $update Message: Successful and return value 0 if ok
+     */
+    public static function local_sync_service_import_html_in_book($cmid, $itemid, $type) {
+        global $DB, $CFG, $USER;
+        require_once($CFG->dirroot . '/mod/' . '/book' . '/lib.php');
+        require_once($CFG->dirroot . '/mod/' . '/book' . '/locallib.php');
+        require_once($CFG->dirroot . '/mod/' . '/book/tool/importhtml' . '/locallib.php');
+
+        debug("local_sync_service_import_html_in_book");
+        // Parameter validation.
+        $params = self::validate_parameters(
+            self::local_sync_service_import_html_in_book_parameters(),
+            array(
+                'cmid' => $bookid,
+                'itemid' => $itemid,
+                'type' => $type
+            )
+        );
+
+        // Ensure the current user has required permission in this course.
+        $cm = get_coursemodule_from_id('book', $cmid, 0, false, MUST_EXIST);
+        $context = context_module::instance($cm->id);
+        self::validate_context($context);
+        $book = $DB->get_record('book', array('id'=>$cm->instance), '*', MUST_EXIST);
+
+        require_capability('booktool/importhtml:import', $context);
+
+        $fs = get_file_storage();
+        debug("get info about itemid $itemid");
+        if (!$files = $fs->get_area_files(context_user::instance($USER->id)->id, 'user', 'draft', $itemid, 'id', false)) {
+              debug("no itemid $itemid found");
+              $update = ['message' => 'Itemid not found','rv' => -1];
+        }
+        else {
+            $file = reset($files);
+            if ($file->get_mimetype() != 'application/zip') {
+                debug("$itemid is not a zip content");
+                $update = ['message' => 'Not a zip content','rv' => -1];
+            }
+            else{
+                debug("all clear, let's go");
+                toolbook_importhtml_import_chapters($file, $type, $book, $context, false);
+                $update = ['message' => 'Successful','rv' => 0];
+            }
+        }
+        return $update;
+    }
+
+    /**
+     * Obtains the Parameter which will be returned.
+     * @return external_description
+     */
+    public static function local_sync_service_import_html_in_book_returns() {
+        return new external_single_structure(
+            array(
+                'message' => new external_value( PARAM_TEXT, 'if the execution was successful' ),
+                'rv' => new external_value( PARAM_TEXT, 'return value' ),
             )
         );
     }
