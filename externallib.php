@@ -570,7 +570,7 @@ class local_sync_service_external extends external_api {
 
 
     /**
-     * Method to create a new course module containing a url.
+     * Method to create a new course module containing a Page.
      *
      * @param $courseid The course id.
      * @param $sectionnum The number of the section inside the course.
@@ -610,13 +610,135 @@ class local_sync_service_external extends external_api {
         // Required permissions.
         require_capability('mod/page:addinstance', $context);
 
-        debug("prepare add course module");
-        $modulename = 'page';  #TODO
-
+        $modulename = 'page';
         $cm = new \stdClass();
         $cm->course     = $params['courseid'];
         $cm->module     = $DB->get_field( 'modules', 'id', array('name' => $modulename) );
-        //$cm->instance   = $instance->id;
+        $cm->section    = $params['sectionnum'];
+        if (!is_null($params['time'])) {
+            $cm->availability = "{\"op\":\"&\",\"c\":[{\"type\":\"date\",\"d\":\">=\",\"t\":" . $params['time'] . "}],\"showc\":[" . $params['visible'] . "]}";
+        } else if ( $params['visible'] === 'false' ) {
+            $cm->visible = 0;
+        }
+
+        $cm->id = add_course_module( $cm );
+        $cmid = $cm->id;
+
+        $instance = new \stdClass();
+        $instance->course = $params['courseid'];
+        $instance->name = $params['urlname'];
+        $instance->intro = null;
+        $instance->introformat = \FORMAT_HTML;
+        $instance->intro = '<p>'.$params['urlname'].'</p>';
+        $instance->page = array('format' => \FORMAT_MARKDOWN,'text' => $content, 'itemid' => false);
+        $instance->coursemodule = $cmid;
+        $instance->id = page_add_instance($instance, $instance);
+
+        $secsectionid = course_add_cm_to_section($params['courseid'], $cmid, $params['sectionnum'], $params['beforemod']);
+
+        $update = [
+            'message' => 'Successful',
+            'id' => $cmid,
+        ];
+        return $update;
+    }
+
+    /**
+     * Obtains the Parameter which will be returned.
+     * @return external_description
+     */
+    public static function local_sync_service_add_new_course_module_page_returns() {
+        return new external_single_structure(
+            array(
+                'message' => new external_value( PARAM_TEXT, 'if the execution was successful' ),
+                'id' => new external_value( PARAM_TEXT, 'cmid of the new module' ),
+            )
+        );
+    }
+
+    //
+
+    /**
+     * Defines the necessary method parameters.
+     * @return external_function_parameters
+     */
+    public static function local_sync_service_add_new_course_module_book_parameters() {
+        return new external_function_parameters(
+            array(
+                'courseid' => new external_value( PARAM_TEXT, 'id of course' ),
+                'sectionnum' => new external_value( PARAM_TEXT, 'relative number of the section' ),
+                'urlname' => new external_value( PARAM_TEXT, 'displayed mod name' ),
+                'content' => new external_value( PARAM_TEXT, 'Content to insert' ),
+                'time' => new external_value( PARAM_TEXT, 'defines the mod. visibility', VALUE_DEFAULT, null ),
+                'visible' => new external_value( PARAM_TEXT, 'defines the mod. visibility' ),
+                'beforemod' => new external_value( PARAM_TEXT, 'mod to set before', VALUE_DEFAULT, null ),
+            )
+        );
+    }
+
+
+    /**
+     * Method to create a new course module containing a book.
+     *
+     * @param $courseid The course id.
+     * @param $sectionnum The number of the section inside the course.
+     * @param $urlname Displayname of the Module.
+     * @param $content Content to publish.
+     * @param $time availability time.
+     * @param $visible visible for course members.
+     * @param $beforemod Optional parameter, a Module where the new Module should be placed before.
+     * @return $update Message: Successful and $cmid of the new Module.
+     */
+    public static function local_sync_service_add_new_course_module_book($courseid, $sectionnum, $urlname, $content, $time = null, $visible, $beforemod = null) {
+        global $DB, $CFG;
+        require_once($CFG->dirroot . '/mod/' . '/book' . '/lib.php');
+        require_once($CFG->dirroot . '/mod/' . '/book' . '/locallib.php');
+
+        debug("local_sync_service_add_new_course_module_book");
+
+
+        // Parameter validation.
+        $params = self::validate_parameters(
+            self::local_sync_service_add_new_course_module_book_parameters(),
+            array(
+                'courseid' => $courseid,
+                'sectionnum' => $sectionnum,
+                'urlname' => $urlname,
+                'content' => $content,
+                'time' => $time,
+                'visible' => $visible,
+                'beforemod' => $beforemod,
+            )
+        );
+
+        // Ensure the current user has required permission in this course.
+        $context = context_course::instance($params['courseid']);
+        self::validate_context($context);
+
+
+        // Required permissions.
+        require_capability('mod/book:addinstance', $context);
+
+        $instance = new \stdClass();
+        $instance->course = $params['courseid'];
+        $instance->name = $params['urlname'];
+        $instance->introformat = \FORMAT_HTML;
+        $instance->completionexpected=null; //todo
+        $instance->intro = '<p>'.$params['urlname'].'</p>';
+        //$instance->book = array('format' => \FORMAT_MARKDOWN,'text' => $content, 'itemid' => false);
+        //$instance->coursemodule = $cmid;
+        $instance->visible=1;
+        $instance->id = book_add_instance($instance, null);
+
+        debug("added book $instance->id");
+
+
+        debug("prepare add course module");
+        $modulename = 'book';
+        $cm = new \stdClass();
+        $cm->course     = $params['courseid'];
+        $cm->instance   = $instance->id;
+        $cm->module     = $DB->get_field( 'modules', 'id', array('name' => $modulename) );
         $cm->section    = $params['sectionnum'];
         if (!is_null($params['time'])) {
             $cm->availability = "{\"op\":\"&\",\"c\":[{\"type\":\"date\",\"d\":\">=\",\"t\":" . $params['time'] . "}],\"showc\":[" . $params['visible'] . "]}";
@@ -628,31 +750,14 @@ class local_sync_service_external extends external_api {
         $cmid = $cm->id;
         debug("course module added $cmid\n");
 
-        $instance = new \stdClass();
-        $instance->course = $params['courseid'];
-        $instance->name = $params['urlname'];
-        $instance->intro = null;
-        $instance->introformat = \FORMAT_HTML;   //or FORMAT_HTML
-        $instance->intro = '<p>'.$params['urlname'].'</p>';
-        $instance->page = array('format' => \FORMAT_MARKDOWN,'text' => $content, 'itemid' => false);
-        $instance->coursemodule = $cmid;
-        $instance->id = page_add_instance($instance, $instance);
-
-
-        debug("prepare add to section\n");
-        print_r ($params, false);
-
         $secsectionid = course_add_cm_to_section($params['courseid'], $cmid, $params['sectionnum'], $params['beforemod']);
 
-        debug("prepare add to section done $sectionid\n");
+        debug("prepare add to section done $sectionid ");
 
         $update = [
             'message' => 'Successful',
             'id' => $cmid,
         ];
-
-        debug("prepare add to section done2\n");
-
         return $update;
     }
 
@@ -660,7 +765,7 @@ class local_sync_service_external extends external_api {
      * Obtains the Parameter which will be returned.
      * @return external_description
      */
-    public static function local_sync_service_add_new_course_module_page_returns() {
+    public static function local_sync_service_add_new_course_module_book_returns() {
         return new external_single_structure(
             array(
                 'message' => new external_value( PARAM_TEXT, 'if the execution was successful' ),
