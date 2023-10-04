@@ -105,6 +105,15 @@ $functions = array(
         'ajax' => true,
         'capabilities' => 'booktool/importhtml:import',
     ),
+    'local_course_delete_all_chapters_from_book' => array(
+        'classname' => 'local_sync_service_external',
+        'methodname' => 'local_sync_service_delete_all_chapters_from_book',
+        'classpath' => 'local/sync_service/externallib.php',
+        'description' => 'Delete all chapters from book',
+        'type' => 'write',
+        'ajax' => true,
+        'capabilities' => 'mod/book:edit',
+    ),
 
 
 );
@@ -117,6 +126,7 @@ $services = array(
             'local_course_add_new_course_module_page',
             'local_course_add_new_course_module_book',
             'local_course_import_html_in_book',
+            'local_course_delete_all_chapters_from_book',
             'local_course_add_new_course_module_resource',
             'local_course_move_module_to_specific_position',
             'local_course_add_new_course_module_directory',

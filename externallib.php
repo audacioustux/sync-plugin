@@ -804,7 +804,7 @@ class local_sync_service_external extends external_api {
         $params = self::validate_parameters(
             self::local_sync_service_import_html_in_book_parameters(),
             array(
-                'cmid' => $bookid,
+                'cmid' => $cmid,
                 'itemid' => $itemid,
                 'type' => $type
             )
@@ -844,6 +844,124 @@ class local_sync_service_external extends external_api {
      * @return external_description
      */
     public static function local_sync_service_import_html_in_book_returns() {
+        return new external_single_structure(
+            array(
+                'message' => new external_value( PARAM_TEXT, 'if the execution was successful' ),
+                'rv' => new external_value( PARAM_TEXT, 'return value' ),
+            )
+        );
+    }
+
+//
+
+   /**
+     * Defines the necessary method parameters.
+     * @return external_function_parameters
+     */
+    public static function local_sync_service_delete_all_chapters_from_book_parameters() {
+        return new external_function_parameters(
+            array(
+                'cmid' => new external_value( PARAM_TEXT, 'course module id of book' )
+            )
+        );
+    }
+
+
+    /**
+     * Method to delete all chapters in a book
+     *
+     * @param $cmid Course module id
+     * @return $update Message: Successful and return value 0 if ok
+     */
+    public static function local_sync_service_delete_all_chapters_from_book($cmid) {
+        global $DB, $CFG, $USER;
+        require_once($CFG->dirroot . '/mod/' . '/book' . '/lib.php');
+        require_once($CFG->dirroot . '/mod/' . '/book' . '/locallib.php');
+
+        debug("local_course_delete_all_chapters_from_book\n");
+        // Parameter validation.
+        $params = self::validate_parameters(
+            self::local_sync_service_delete_all_chapters_from_book_parameters(),
+            array(
+                'cmid' => $cmid,
+            )
+        );
+
+        // Ensure the current user has required permission in this course.
+        $cm = get_coursemodule_from_id('book', $cmid, 0, false, MUST_EXIST);
+        debug("module id  $cm->id\n");
+        $context = context_module::instance($cm->id);
+        self::validate_context($context);
+
+        require_capability('mod/book:edit', $context);
+
+        $fs = get_file_storage();
+        $book = $DB->get_record('book', array('id'=>$cm->instance), '*', MUST_EXIST);
+        debug("book id $book->id\n");
+
+        //$chapterid = 13;
+        //$chapter = $DB->get_record('book_chapters', ['id' => $chapterid, 'bookid' => $book->id], '*', MUST_EXIST);
+        //$chapter = $DB->get_records('book_chapters', ['bookid' => $book->id], '*', MUST_EXIST);
+        $chapter = $DB->get_records('book_chapters', array('bookid' => $book->id), 'pagenum', 'id, pagenum,subchapter, title, content, contentformat, hidden');
+        foreach ($chapter as $id => $ch) {
+            debug("in chapter $ch->id\n");
+
+
+            $subchaptercount = 0;
+            if (!$chapter->subchapter) {
+                // This is a top-level chapter.
+                // Make sure to remove any sub-chapters if there are any.
+                $chapters = $DB->get_recordset_select('book_chapters', 'bookid = :bookid AND pagenum > :pagenum', [
+                        'bookid' => $book->id,
+                        'pagenum' => $chapter->pagenum,
+                    ], 'pagenum');
+
+                foreach ($chapters as $ch) {
+                    debug("get chapter $ch->id\n");
+                    if (!$ch->subchapter) {
+                        // This is a new chapter. Any subsequent subchapters will be part of a different chapter.
+                        break;
+                    } else {
+                        // This is subchapter of the chapter being removed.
+                        core_tag_tag::remove_all_item_tags('mod_book', 'book_chapters', $ch->id);
+                        $fs->delete_area_files($context->id, 'mod_book', 'chapter', $ch->id);
+                        $DB->delete_records('book_chapters', ['id' => $ch->id]);
+
+                        $subchaptercount++;
+                    }
+                }
+                $chapters->close();
+            }
+            else
+                debug("no subcharters to delete\n");
+
+            // Now delete the actual chapter.
+            debug("delete chapter $ch->id\n");
+            core_tag_tag::remove_all_item_tags('mod_book', 'book_chapters', $ch->id);
+            $fs->delete_area_files($context->id, 'mod_book', 'chapter', $ch->id);
+            $DB->delete_records('book_chapters', ['id' => $ch->id]);
+        }
+
+        // Ensure that the book structure is correct.
+        // book_preload_chapters will fix parts including the pagenum.
+        $chapters = book_preload_chapters($book);
+
+        book_add_fake_block($chapters, $chapter, $book, $cm);
+
+        // Bump the book revision.
+        $DB->set_field('book', 'revision', $book->revision + 1, ['id' => $book->id]);
+
+        debug("all clear, let's go");
+        $update = ['message' => 'Successful','rv' => 0];
+
+        return $update;
+    }
+
+    /**
+     * Obtains the Parameter which will be returned.
+     * @return external_description
+     */
+    public static function local_sync_service_delete_all_chapters_from_book_returns() {
         return new external_single_structure(
             array(
                 'message' => new external_value( PARAM_TEXT, 'if the execution was successful' ),
