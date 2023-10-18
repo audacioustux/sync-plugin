@@ -142,11 +142,14 @@ $services = array(
             'local_course_move_module_to_specific_position',
             'local_course_add_new_course_module_directory',
             'local_course_add_files_to_directory',
+            'core_course_get_courses',
             'core_course_get_contents',
+            'core_course_get_course_module',
             'core_enrol_get_users_courses',
             'core_webservice_get_site_info',
             'core_course_delete_modules',
-            'core_course_get_user_administration_options'
+            'core_course_get_user_administration_options',
+
         ),
         'restrictedusers' => 1,
         'enabled' => 1,
