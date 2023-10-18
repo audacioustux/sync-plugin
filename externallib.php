@@ -899,9 +899,6 @@ class local_sync_service_external extends external_api {
         $book = $DB->get_record('book', array('id'=>$cm->instance), '*', MUST_EXIST);
         debug("book id $book->id\n");
 
-        //$chapterid = 13;
-        //$chapter = $DB->get_record('book_chapters', ['id' => $chapterid, 'bookid' => $book->id], '*', MUST_EXIST);
-        //$chapter = $DB->get_records('book_chapters', ['bookid' => $book->id], '*', MUST_EXIST);
         $chapter = $DB->get_records('book_chapters', array('bookid' => $book->id), 'pagenum', 'id, pagenum,subchapter, title, content, contentformat, hidden');
         foreach ($chapter as $id => $ch) {
             debug("in chapter $ch->id\n");
@@ -966,6 +963,96 @@ class local_sync_service_external extends external_api {
             array(
                 'message' => new external_value( PARAM_TEXT, 'if the execution was successful' ),
                 'rv' => new external_value( PARAM_TEXT, 'return value' ),
+            )
+        );
+    }
+
+
+
+    //local_sync_service_update_course_module_resource
+
+    /**
+     * Defines the necessary method parameters.
+     * @return external_function_parameters
+     */
+    public static function local_sync_service_update_course_module_resource_parameters() {
+        return new external_function_parameters(
+            array(
+                'cmid' => new external_value( PARAM_TEXT, 'id of module' ),
+                'itemid' => new external_value( PARAM_TEXT, 'id of the upload' ),
+                'displayname' => new external_value( PARAM_TEXT, 'displayed mod name', VALUE_DEFAULT, null  )
+            )
+        );
+    }
+
+    /**
+     * Method to update a new course module containing a file.
+     *
+     * @param $courseid The course id.
+     * @param $itemid File to publish.
+     * @param $displayname Displayname of resource (optional)
+     * @return $update Message: Successful and $cmid of the new Module.
+     */
+    public static function local_sync_service_update_course_module_resource($cmid, $itemid, $displayname) {
+        global $DB, $CFG;
+        require_once($CFG->dirroot . '/mod/' . '/resource' . '/lib.php');
+        require_once($CFG->dirroot . '/mod/' . '/resource' . '/locallib.php');
+        require_once($CFG->dirroot . '/availability/' . '/condition' . '/date' . '/classes' . '/condition.php');
+
+        debug("local_sync_service_update_course_module_resource\n");
+        // Parameter validation.
+        $params = self::validate_parameters(
+            self::local_sync_service_update_course_module_resource_parameters(),
+            array(
+                'cmid' => $cmid,
+                'itemid' => $itemid,
+                'displayname' => $displayname
+            )
+        );
+
+        $cm = get_coursemodule_from_id('resource', $cmid, 0, false, MUST_EXIST);
+        debug("module instance id  $cm->instance\n");
+
+        // Ensure the current user has required permission in this course.
+        $context = context_course::instance($cm->course);
+        self::validate_context($context);
+
+        // Required permissions.
+        require_capability('mod/resource:addinstance', $context);
+
+        $modulename = 'resource';
+        $instance = new \stdClass();
+        $instance->course = $cm->course;
+        $instance->intro = null;
+        $instance->introformat = \FORMAT_HTML;
+        $instance->coursemodule = $cmid;
+        $instance->files = $params['itemid'];
+        $instance->instance = $cm->instance;
+        //display name is optional
+        if (!is_null($params['displayname'])) {
+            $instance->name = $params['displayname'];
+        } else {
+            $instance->name = $cm->name;
+        }
+
+        $instance->id = resource_update_instance($instance, null);
+
+        $update = [
+            'message' => 'Successful',
+            'id' => $cmid,
+        ];
+        return $update;
+    }
+
+    /**
+     * Obtains the Parameter which will be returned.
+     * @return external_description
+     */
+    public static function local_sync_service_update_course_module_resource_returns() {
+        return new external_single_structure(
+            array(
+                'message' => new external_value( PARAM_TEXT, 'if the execution was successful' ),
+                'id' => new external_value( PARAM_TEXT, 'cmid of the new module' ),
             )
         );
     }
