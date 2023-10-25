@@ -968,9 +968,6 @@ class local_sync_service_external extends external_api {
     }
 
 
-
-    //local_sync_service_update_course_module_resource
-
     /**
      * Defines the necessary method parameters.
      * @return external_function_parameters
@@ -997,6 +994,7 @@ class local_sync_service_external extends external_api {
         global $DB, $CFG;
         require_once($CFG->dirroot . '/mod/' . '/resource' . '/lib.php');
         require_once($CFG->dirroot . '/mod/' . '/resource' . '/locallib.php');
+        require_once($CFG->dirroot . '/course/' . '/modlib.php');
         require_once($CFG->dirroot . '/availability/' . '/condition' . '/date' . '/classes' . '/condition.php');
 
         debug("local_sync_service_update_course_module_resource\n");
@@ -1023,11 +1021,13 @@ class local_sync_service_external extends external_api {
         $modulename = 'resource';
         $instance = new \stdClass();
         $instance->course = $cm->course;
-        $instance->intro = null;
+        $instance->intro = "";
         $instance->introformat = \FORMAT_HTML;
         $instance->coursemodule = $cmid;
-        $instance->files = $params['itemid'];
+        $instance->files = $itemid;
         $instance->instance = $cm->instance;
+        $instance->modulename = $modulename;
+        $instance->type = 'mod';
         //display name is optional
         if (!is_null($params['displayname'])) {
             $instance->name = $params['displayname'];
@@ -1036,6 +1036,8 @@ class local_sync_service_external extends external_api {
         }
 
         $instance->id = resource_update_instance($instance, null);
+        $course = $DB->get_record('course', array('id' => $cm->course), '*', MUST_EXIST);
+        $moduleinfo = edit_module_post_actions($instance, $course);
 
         $update = [
             'message' => 'Successful',
@@ -1056,6 +1058,92 @@ class local_sync_service_external extends external_api {
             )
         );
     }
+
+
+    /**
+     * Defines the necessary method parameters.
+     * @return external_function_parameters
+     */
+    public static function local_sync_service_update_course_module_label_parameters() {
+        return new external_function_parameters(
+            array(
+                'cmid' => new external_value( PARAM_TEXT, 'id of module' ),
+                'htmlbody' => new external_value( PARAM_TEXT, 'HTML name', VALUE_DEFAULT, null  ),
+            )
+        );
+    }
+
+    /**
+     * Method to update a new course module containing a file.
+     *
+     * @param $cmid The course module id.
+     * @param $htmlbody HTML code to add to body
+     * @return $update Message: Successful and $cmid of the new Module.
+     */
+    public static function local_sync_service_update_course_module_label($cmid, $htmlbody) {
+        global $DB, $CFG;
+        require_once($CFG->dirroot . '/availability/' . '/condition' . '/date' . '/classes' . '/condition.php');
+        require_once($CFG->dirroot . '/mod/' . '/label' . '/lib.php');
+        require_once($CFG->dirroot . '/course/' . '/modlib.php');
+
+        debug("local_sync_service_update_course_module_label\n");
+        // Parameter validation.
+        $params = self::validate_parameters(
+            self::local_sync_service_update_course_module_label_parameters(),
+            array(
+                'cmid' => $cmid,
+                'htmlbody' => $htmlbody
+            )
+        );
+
+        $cm = get_coursemodule_from_id('label', $cmid, 0, false, MUST_EXIST);
+
+        // Ensure the current user has required permission in this course.
+        $context = context_course::instance($cm->course);
+        self::validate_context($context);
+
+
+        // Required permissions.
+        require_capability('mod/label:addinstance', $context);
+
+        $modulename = 'label';
+        $cm->module     = $DB->get_field( 'modules', 'id', array('name' => $modulename) );
+        $instance = new \stdClass();
+        $instance->course = $cm->course;
+        $instance->intro = $htmlbody;
+
+        $instance->introformat = \FORMAT_HTML;
+        $instance->coursemodule = $cmid;
+        $instance->instance = $cm->instance;
+        $instance->modulename = $modulename;
+        $instance->type = 'mod';
+        $instance->visible = true;
+        $instance->id = label_update_instance($instance, null);
+
+        $course = $DB->get_record('course', array('id' => $cm->course), '*', MUST_EXIST);
+
+        $moduleinfo = edit_module_post_actions($instance, $course);
+
+        $update = [
+            'message' => 'Successful',
+            'id' => $cmid,
+        ];
+        return $update;
+    }
+
+    /**
+     * Obtains the Parameter which will be returned.
+     * @return external_description
+     */
+    public static function local_sync_service_update_course_module_label_returns() {
+        return new external_single_structure(
+            array(
+                'message' => new external_value( PARAM_TEXT, 'if the execution was successful' ),
+                'id' => new external_value( PARAM_TEXT, 'cmid of the new module' ),
+            )
+        );
+    }
+
 
 }
 

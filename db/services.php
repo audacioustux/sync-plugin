@@ -123,6 +123,15 @@ $functions = array(
         'ajax' => true,
         'capabilities' => 'mod/resource:addinstance',
     ),
+    'local_course_update_course_module_label' => array(
+        'classname' => 'local_sync_service_external',
+        'methodname' => 'local_sync_service_update_course_module_label',
+        'classpath' => 'local/sync_service/externallib.php',
+        'description' => 'Update course module of type label (aka text&media)',
+        'type' => 'write',
+        'ajax' => true,
+        'capabilities' => 'mod/label:addinstance',
+    ),
 
 
 
@@ -139,6 +148,7 @@ $services = array(
             'local_course_delete_all_chapters_from_book',
             'local_course_add_new_course_module_resource',
             'local_course_update_course_module_resource',
+            'local_course_update_course_module_label',
             'local_course_move_module_to_specific_position',
             'local_course_add_new_course_module_directory',
             'local_course_add_files_to_directory',
