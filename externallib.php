@@ -1145,5 +1145,889 @@ class local_sync_service_external extends external_api {
     }
 
 
+    /**
+     * Defines the necessary method parameters.
+     * @return external_function_parameters
+     */
+    public static function local_sync_service_update_course_module_page_parameters() {
+        return new external_function_parameters(
+            array(
+                'cmid' => new external_value( PARAM_TEXT, 'id of module' ),
+                'content' => new external_value( PARAM_TEXT, 'HTML or Markdown code'  ),
+                'format' => new external_value( PARAM_TEXT, 'Markdown or HTML', VALUE_DEFAULT, \FORMAT_MARKDOWN  ),
+            )
+        );
+    }
+
+    /**
+     * Method to update a new course module containing a file.
+     *
+     * @param $cmid The course module id.
+     * @param $content Content to add
+     * @param $format HTML or Markdown(=default)
+     * @return $update Message: Successful and $cmid of the new Module.
+     */
+    public static function local_sync_service_update_course_module_page($cmid, $content, $format) {
+        global $DB, $CFG;
+        require_once($CFG->dirroot . '/mod/' . '/page' . '/lib.php');
+        require_once($CFG->dirroot . '/course/' . '/modlib.php');
+
+        //debug("local_sync_service_update_course_module_page\n");
+        // Parameter validation.
+        $params = self::validate_parameters(
+            self::local_sync_service_update_course_module_page_parameters(),
+            array(
+                'cmid' => $cmid,
+                'content' => $content,
+                'format' => $format
+            )
+        );
+
+        $cm = get_coursemodule_from_id('page', $cmid, 0, false, MUST_EXIST);
+
+        // Ensure the current user has required permission in this course.
+        $context = context_module::instance($cmid);
+        self::validate_context($context);
+
+        // Required permissions.
+        require_capability('mod/page:addinstance', $context);
+
+        $modulename = 'page';
+        $cm->module = $DB->get_field( 'modules', 'id', array('name' => $modulename) );
+        $instance = new \stdClass();
+        $instance->course = $cm->course;
+        $instance->contentformat = $format;
+        $instance->page =  [
+            'text' => html_entity_decode($content),
+            'format' =>  $format,
+        ];
+
+        $instance->coursemodule = $cmid;
+        $instance->instance = $cm->instance;
+        $instance->modulename = $modulename;
+        $instance->type = 'mod';
+        $instance->visible = true;
+        $instance->id = page_update_instance($instance, null);
+
+        $course = $DB->get_record('course', array('id' => $cm->course), '*', MUST_EXIST);
+        $update = [
+            'message' => 'Successful',
+            'id' => $cmid,
+        ];
+        return $update;
+    }
+
+    /**
+     * Obtains the Parameter which will be returned.
+     * @return external_description
+     */
+    public static function local_sync_service_update_course_module_page_returns() {
+        return new external_single_structure(
+            array(
+                'message' => new external_value( PARAM_TEXT, 'if the execution was successful' ),
+                'id' => new external_value( PARAM_TEXT, 'cmid of the new module' ),
+            )
+        );
+    }
+
+
+
+    /**
+     * Defines the necessary method parameters.
+     * @return external_function_parameters
+     */
+
+     public static function local_sync_service_update_course_module_assignment_parameters() {
+        return new external_function_parameters(
+            array(
+                'assignments' => new external_multiple_structure(
+                    new external_single_structure(
+                        array(
+                            'cmid' => new external_value(PARAM_INT, 'ID of the assignment module'),
+                            'desc' => new external_value(PARAM_TEXT, 'description of assisngment'),
+                            'activity' => new external_value(PARAM_TEXT, 'activity in assignment', VALUE_OPTIONAL)
+                        )
+                    ), 'assignment courses to update'
+                )
+            )
+        );
+    }
+
+    /**
+     * Method to update a new course module containing a assignment.
+     *
+     * @param $cmid The course module id.
+     * @param $desc  HTML code to add to description
+     * @return $update Message: Successful and $cmid of the new Module.
+     */
+    public static function local_sync_service_update_course_module_assignment($assignments) {
+        global $DB, $CFG;
+        require_once($CFG->dirroot . '/mod/' . '/assign' . '/lib.php');
+        require_once($CFG->dirroot . '/mod/' . '/assign' . '/locallib.php');
+        $warnings = array();
+
+        //debug("local_sync_service_update_course_module_assignment\n");
+
+        $params = self::validate_parameters(self::local_sync_service_update_course_module_assignment_parameters(), array('assignments' => $assignments));
+
+        foreach ($params['assignments'] as $ass) {
+            try {
+                $cmid = $ass['cmid'];
+                $desc = $ass['desc'];
+                //debug(" cmid=$cmid , desc=$desc\n");
+
+                if (array_key_exists('activity', $ass) ) {
+                    $activity = $ass['activity'];
+                }
+
+            }catch (Exception $e) {
+                debug(" exception\n");
+                $warning = array();
+                $warning['item'] = 'assignments';
+                $warning['itemid'] = $ass['cmid'];
+                if ($e instanceof moodle_exception) {
+                    $warning['warningcode'] = $e->errorcode;
+                } else {
+                    $warning['warningcode'] = $e->getCode();
+                }
+                $warning['message'] = $e->getMessage();
+                $warnings[] = $warning;
+            }
+        }
+
+        $cm = get_coursemodule_from_id('assign', $cmid, 0, false, MUST_EXIST);
+        // Ensure the current user has required permission in this course.
+        $context = context_module::instance($cmid);
+        self::validate_context($context);
+        require_capability('mod/assign:addinstance', $context);
+
+        $dbparams = array('id'=>$cm->instance);
+        if (! $instance = $DB->get_record('assign', $dbparams, '*')) {
+            return false;
+        }
+
+        $instance->id = $cm->instance;
+
+        $instance->activityeditor =  [
+            'text' => html_entity_decode($activity),
+            'format' =>  \FORMAT_MARKDOWN,
+        ];
+
+        $instance->introformat = \FORMAT_MARKDOWN;
+        $instance->activityformat = \FORMAT_MARKDOWN;
+        $instance->coursemodule = $cmid;
+        $instance->instance = $cm->instance;
+        $instance->modulename ='assign';
+        $instance->type = 'mod';
+        $instance->visible = true;
+
+        $instance->intro = html_entity_decode($desc);
+        $instance->id = assign_update_instance($instance, null);
+
+        $update = [
+            'message' => 'Successful',
+            'id' => $cmid,
+        ];
+
+        return $update;
+    }
+
+    /**
+     * Obtains the Parameter which will be returned.
+     * @return external_description
+     */
+    public static function local_sync_service_update_course_module_assignment_returns() {
+        return new external_single_structure(
+            array(
+                'message' => new external_value( PARAM_TEXT, 'if the execution was successful' ),
+                'id' => new external_value( PARAM_TEXT, 'cmid of the new module' ),
+            )
+        );
+    }
+
+         /**
+     * Defines the necessary method parameters.
+     * @return external_function_parameters
+     */
+
+     public static function local_sync_service_update_course_module_lesson_parameters() {
+        return new external_function_parameters(
+            array(
+                'cmid' => new external_value( PARAM_INT, 'id of module' ),
+                'desc' => new external_value( PARAM_TEXT, 'description'  )               
+            )
+        );
+    }
+
+    /**
+     * Method to update a lesson module 
+     *
+     * @param $cmid The course module id.
+     * @param $desc  content to add to description
+     * @return $update Message: Successful and $cmid of the new Module.
+     */
+    public static function local_sync_service_update_course_module_lesson($cmid, $desc) {
+        global $DB, $CFG;
+        //debug("local_sync_service_update_course_module_lesson");
+        
+        require_once($CFG->dirroot . '/mod/' . '/lesson' . '/lib.php');
+        require_once($CFG->dirroot . '/mod/' . '/lesson' . '/locallib.php');
+              
+
+        // Parameter validation.
+        $params = self::validate_parameters(
+            self::local_sync_service_update_course_module_lesson_parameters(),
+            array(
+                'cmid' => $cmid,
+                'desc' => $desc
+            )
+        );
+
+       
+        $cm = get_coursemodule_from_id('lesson', $cmid, 0, false, MUST_EXIST);
+        $instance = $DB->get_record('lesson', array('id' => $cm->instance), '*', MUST_EXIST);
+        $context = context_module::instance($cmid);
+        self::validate_context($context);
+        require_capability('mod/lesson:addinstance', $context);
+
+        $instance->intro=html_entity_decode($desc);
+        $instance->introformat = \FORMAT_MARKDOWN;        
+        $instance->coursemodule = $cmid;
+        $instance->instance = $cm->instance;
+        $instance->modulename ='lesson';
+        $instance->type = 'mod';
+        $instance->visible = true;        
+       
+        $instance->id = lesson_update_instance($instance, null);
+ 
+        $update = [
+            'message' => 'Successful',
+            'id' => $cmid,
+        ];
+
+        return $update;
+    }
+
+    /**
+     * Obtains the Parameter which will be returned.
+     * @return external_description
+     */
+    public static function local_sync_service_update_course_module_lesson_returns() {
+        return new external_single_structure(
+            array(
+                'message' => new external_value( PARAM_TEXT, 'if the execution was successful' ),
+                'id' => new external_value( PARAM_TEXT, 'cmid of the new module' ),
+            )
+        );
+    }
+
+
+    /**
+     * Defines the necessary method parameters.
+     * @return external_function_parameters
+     */
+
+     public static function local_sync_service_update_course_module_lesson_contentpage_parameters() {
+        return new external_function_parameters(
+            array(
+                'cmid' => new external_value( PARAM_INT, 'id of module' ),
+                'pageid' => new external_value( PARAM_INT, 'pageid of lesson content' ),
+                'title' => new external_value( PARAM_TEXT, 'title of lesson content page',VALUE_OPTIONAL ),
+                'content' => new external_value( PARAM_TEXT, 'HTML or Markdown code'  ),
+               
+            )
+        );
+    }
+
+    /**
+     * Method to update a lesson module and add a content page to it.
+     *
+     * @param $cmid The cours $title,e module id.
+     * @param $desc  content to add to description
+     * @return $update Message: Successful and $cmid of the new Module.
+     */
+    public static function local_sync_service_update_course_module_lesson_contentpage($cmid, $pageid, $title, $content) {
+        global $DB, $CFG;
+        require_once($CFG->dirroot . '/mod/' . '/lesson' . '/lib.php');
+        require_once($CFG->dirroot . '/mod/' . '/lesson' . '/locallib.php');
+        $warnings = array();
+
+        //debug("local_sync_service_update_course_module_lesson_contentpage\n");
+
+          // Parameter validation.
+         $params = self::validate_parameters(
+            self::local_sync_service_update_course_module_lesson_contentpage_parameters(),
+            array(
+                'cmid' => $cmid,
+                'pageid' => $pageid,
+                'title' => $title,
+                'content' => $content                
+            )
+        );
+        $cm = get_coursemodule_from_id('lesson', $cmid, 0, false, MUST_EXIST);
+        $instance = $DB->get_record('lesson', array('id' => $cm->instance), '*', MUST_EXIST);
+        $context = context_module::instance($cmid);
+        self::validate_context($context);
+        require_capability('mod/lesson:addinstance', $context);
+        
+        $lesson = new Lesson($instance);
+        $page = $lesson->load_page($pageid);
+        $prop = $page->properties();
+        $prop->contents=html_entity_decode($content);        
+        if (!empty($title)) {            
+            $prop->title=$title;
+        }
+        $DB->update_record("lesson_pages", $prop);
+
+        $update = [
+            'message' => 'Successful',
+            'id' => $cmid,
+        ];
+
+        return $update;
+    }
+
+    /**
+     * Obtains the Parameter which will be returned.
+     * @return external_description
+     */
+    public static function local_sync_service_update_course_module_lesson_contentpage_returns() {
+        return new external_single_structure(
+            array(
+                'message' => new external_value( PARAM_TEXT, 'if the execution was successful' ),
+                'id' => new external_value( PARAM_TEXT, 'cmid of the new module' ),
+            )
+        );
+    }
+
+
+
+     /**
+     * Defines the necessary method parameters.
+     * @return external_function_parameters
+     */
+    public static function local_sync_service_assignment_save_attachment_parameters() {
+        return new external_function_parameters(
+            array(
+                'cmid' => new external_value( PARAM_TEXT, 'id of module' ),
+                'itemid' => new external_value( PARAM_TEXT, 'id of draft area where file uploaded' ),
+                'filename' => new external_value( PARAM_TEXT, 'filename' )
+            )
+        );
+    }
+
+    /**
+     * Method to update a new course module containing a file.
+     *
+     * @param $courseid The course id.
+     * @param $itemid File to publish.
+     * @return $update Message: Successful and $cmid of the new Module.
+     */
+    public static function local_sync_service_assignment_save_attachment($cmid, $itemid, $filename) {
+        global $DB, $CFG,$USER;
+
+        require_once($CFG->dirroot . '/mod/' . '/assign' . '/lib.php');
+        require_once($CFG->dirroot . '/mod/' . '/assign' . '/locallib.php');
+
+        //debug("local_sync_service_assignment_save_attachment\n");
+
+        // Parameter validation.
+        $params = self::validate_parameters(
+            self::local_sync_service_assignment_save_attachment_parameters(),
+            array(
+                'cmid' => $cmid,
+                'itemid' => $itemid,
+                'filename' => $filename
+            )
+        );
+
+        $cm = get_coursemodule_from_id('assign', $cmid, 0, false, MUST_EXIST);
+        $instance = $DB->get_record('assign', array('id' => $cm->instance), '*', MUST_EXIST);
+
+        // Ensure the current user has required permission in this course.
+        $context = context_module::instance($cmid);
+        self::validate_context($context);
+
+        // Required permissions.
+        require_capability('mod/assign:addinstance', $context);
+        require_capability('moodle/course:managefiles', $context);
+
+        $fs = get_file_storage();
+        $usercontext = \context_user::instance($USER->id);
+
+        $files = $fs->get_area_files($context->id, 'mod_assign', 'intro'/*ASSIGN_INTROATTACHMENT_FILEAREA*/, 0);
+        foreach ($files as $file) {
+            if  ($file->get_filename() == $filename /*and $file->get_itemid() == $itemid*/) {
+                $file->delete();
+            }
+        }
+
+        $files = $fs->get_area_files($usercontext->id, 'user', 'draft', $itemid);
+        
+        foreach ($files as $file) {
+
+            $fileinfo = [
+                'contextid' =>  $context->id,   // ID of the context.
+                'component' => 'mod_assign', // Your component name.
+                'filearea'  => 'intro', //ASSIGN_INTROATTACHMENT_FILEAREA,       // Usually = table name.
+                'itemid'    =>  0,              // Usually = ID of row in table.
+                'filepath'  =>  '/',            // Any path beginning and ending in /.
+                'filename'  =>  $file->get_filename(),   // Any filename.
+            ];
+
+            if  ($file->get_filename() == $filename /*and $file->get_itemid() == $itemid*/ ) {
+                $fs->create_file_from_storedfile($fileinfo, $file);
+
+                $url = moodle_url::make_draftfile_url(
+                    $file->get_itemid(),
+                    $file->get_filepath(),
+                    $file->get_filename(),
+                    false
+                );
+
+                break;
+            }
+
+        }
+
+        $instance->coursemodule = $cmid;
+        $instance->instance = $cm->instance;
+        $instance->id = $cm->instance;
+        $instance->id = assign_update_instance($instance, null);
+
+        $update = [
+            'message' => 'Successful',
+            'id' => $cmid,
+        ];
+        return $update;
+    }
+
+    /**
+     * Obtains the Parameter which will be returned.
+     * @return external_description
+     */
+    public static function local_sync_service_assignment_save_attachment_returns() {
+        return new external_single_structure(
+            array(
+                'message' => new external_value( PARAM_TEXT, 'if the execution was successful' ),
+                'id' => new external_value( PARAM_TEXT, 'cmid of the new module' ),
+                //'url' => new external_value( PARAM_TEXT, 'url of the uploaded itemid' ),
+            )
+        );
+    }
+
+
+    /**
+     * Defines the necessary method parameters.
+     * @return external_function_parameters
+     */
+    public static function local_sync_service_label_save_attachment_parameters() {
+        return new external_function_parameters(
+            array(
+                'cmid' => new external_value( PARAM_TEXT, 'id of module' ),
+                'itemid' => new external_value( PARAM_TEXT, 'id of draft area where file uploaded' ),
+                'filename' => new external_value( PARAM_TEXT, 'filename' )
+            )
+        );
+    }
+
+    /**
+     *
+     * @param $cmdid The  id of the label module
+     * @param $itemid File to publish.
+     * @return $update Message: Successful and $cmid of the new Module.
+     */
+    public static function local_sync_service_label_save_attachment($cmid, $itemid, $filename) {
+        global $DB, $CFG,$USER;
+
+        require_once($CFG->dirroot . '/mod/' . '/label' . '/lib.php');
+
+        // Parameter validation.
+        $params = self::validate_parameters(
+            self::local_sync_service_label_save_attachment_parameters(),
+            array(
+                'cmid' => $cmid,
+                'itemid' => $itemid,
+                'filename' => $filename
+            )
+        );
+
+        //debug(" cmid=$cmid , itemid=$itemid, filename=$filename\n");
+
+        $cm = get_coursemodule_from_id('label', $cmid, 0, false, MUST_EXIST);
+        $instance = $DB->get_record('label', array('id' => $cm->instance), '*', MUST_EXIST);
+        $context = context_module::instance($cmid);
+        self::validate_context($context);
+
+        // Required permissions.
+        require_capability('mod/label:addinstance', $context);
+        require_capability('moodle/course:managefiles', $context);
+
+        $fs = get_file_storage();
+        $usercontext = \context_user::instance($USER->id);
+        $files = $fs->get_area_files($context->id, 'mod_label', 'intro', 0);
+        foreach ($files as $file) {
+            if  ($file->get_filename() == $filename) {
+                $file->delete();
+            }
+
+        }
+
+        $files = $fs->get_area_files($usercontext->id, 'user', 'draft', $itemid);
+        foreach ($files as $file) {
+            $fileinfo = [
+                'contextid' =>  $context->id,   // ID of the context.
+                'component' => 'mod_label', // Your component name.
+                'filearea'  => 'intro',
+                'itemid'    =>  0,              // Usually = ID of row in table.
+                'filepath'  =>  '/',            // Any path beginning and ending in /.
+                'filename'  =>  $file->get_filename(),   // Any filename.
+            ];
+
+            if  ($file->get_filename() == $filename ) {
+                // debug("create store file for $filename ($itemid)\n");
+                $fs->create_file_from_storedfile($fileinfo, $file);
+
+                $url = moodle_url::make_draftfile_url(
+                    $file->get_itemid(),
+                    $file->get_filepath(),
+                    $file->get_filename(),
+                    false
+                );
+                // debug("Draft URL: $url\n");
+                break;
+            }
+
+        }
+
+        $instance->coursemodule = $cmid;
+        $instance->instance = $cm->instance;
+        $instance->id = $cm->instance;
+        $instance->id = label_update_instance($instance);
+
+
+        $update = [
+            'message' => 'Successful',
+            'id' => $cmid,
+        ];
+        return $update;
+    }
+
+    /**
+     * Obtains the Parameter which will be returned.
+     * @return external_description
+     */
+    public static function local_sync_service_label_save_attachment_returns() {
+        return new external_single_structure(
+            array(
+                'message' => new external_value( PARAM_TEXT, 'if the execution was successful' ),
+                'id' => new external_value( PARAM_TEXT, 'cmid of the new module' ),
+            )
+        );
+    }
+
+         /**
+     * Defines the necessary method parameters.
+     * @return external_function_parameters
+     */
+    public static function local_sync_service_page_save_attachment_parameters() {
+        return new external_function_parameters(
+            array(
+                'cmid' => new external_value( PARAM_TEXT, 'id of module' ),
+                'itemid' => new external_value( PARAM_TEXT, 'id of draft area where file uploaded' ),
+                'filename' => new external_value( PARAM_TEXT, 'filename' )
+            )
+        );
+    }
+
+    /**
+     *
+     * @param $cmdid The  id of the label module
+     * @param $itemid File to publish.
+     * @return $update Message: Successful and $cmid of the new Module.
+     */
+    public static function local_sync_service_page_save_attachment($cmid, $itemid, $filename) {
+        global $DB, $CFG,$USER;
+
+        require_once($CFG->dirroot . '/mod/' . '/page' . '/lib.php');
+
+        // Parameter validation.
+        $params = self::validate_parameters(
+            self::local_sync_service_page_save_attachment_parameters(),
+            array(
+                'cmid' => $cmid,
+                'itemid' => $itemid,
+                'filename' => $filename
+            )
+        );
+
+        $cm = get_coursemodule_from_id('page', $cmid, 0, false, MUST_EXIST);
+        $instance = $DB->get_record('page', array('id' => $cm->instance), '*', MUST_EXIST);
+        $context = context_module::instance($cmid);
+        self::validate_context($context);
+
+        // Required permissions.
+        require_capability('mod/page:addinstance', $context);
+        require_capability('moodle/course:managefiles', $context);
+
+        $fs = get_file_storage();
+        $usercontext = \context_user::instance($USER->id);
+        $files = $fs->get_area_files($context->id, 'mod_page', 'content', 0);
+        foreach ($files as $file) {
+            if  ($file->get_filename() == $filename) {
+                $file->delete();
+            }
+        }
+
+        $files = $fs->get_area_files($usercontext->id, 'user', 'draft', $itemid);
+        foreach ($files as $file) {
+
+            $fileinfo = [
+                'contextid' =>  $context->id,   // ID of the context.
+                'component' => 'mod_page', // Your component name.
+                'filearea'  => 'content',
+                'itemid'    =>  0,              // Usually = ID of row in table.
+                'filepath'  =>  '/',            // Any path beginning and ending in /.
+                'filename'  =>  $file->get_filename(),   // Any filename.
+            ];
+
+            if  ($file->get_filename() == $filename ) {
+                $fs->create_file_from_storedfile($fileinfo, $file);
+                break;
+            }
+        }
+
+        $update = [
+            'message' => 'Successful',
+            'id' => $cmid,
+        ];
+        return $update;
+    }
+
+    /**
+     * Obtains the Parameter which will be returned.
+     * @return external_description
+     */
+    public static function local_sync_service_page_save_attachment_returns() {
+        return new external_single_structure(
+            array(
+                'message' => new external_value( PARAM_TEXT, 'if the execution was successful' ),
+                'id' => new external_value( PARAM_TEXT, 'cmid of the new module' ),
+            )
+        );
+    }
+
+         /**
+     * Defines the necessary method parameters.
+     * @return external_function_parameters
+     */
+    public static function local_sync_service_lesson_save_attachment_parameters() {
+        return new external_function_parameters(
+            array(
+                'cmid' => new external_value( PARAM_TEXT, 'id of module' ),
+                'itemid' => new external_value( PARAM_TEXT, 'id of draft area where file uploaded' ),
+                'filename' => new external_value( PARAM_TEXT, 'filename' )
+            )
+        );
+    }
+
+
+    /**
+     *
+     * @param $cmdid The  id of the label module
+     * @param $itemid File to publish.
+     * @return $update Message: Successful and $cmid of the new Module.
+     */
+    public static function local_sync_service_lesson_save_attachment($cmid, $itemid, $filename) {
+        global $DB, $CFG,$USER;
+
+        require_once($CFG->dirroot . '/mod/' . '/lesson' . '/lib.php');
+
+        // Parameter validation.
+        $params = self::validate_parameters(
+            self::local_sync_service_lesson_save_attachment_parameters(),
+            array(
+                'cmid' => $cmid,
+                'itemid' => $itemid,
+                'filename' => $filename
+            )
+        );
+
+        $cm = get_coursemodule_from_id('lesson', $cmid, 0, false, MUST_EXIST);
+        $instance = $DB->get_record('lesson', array('id' => $cm->instance), '*', MUST_EXIST);
+        $context = context_module::instance($cmid);
+        self::validate_context($context);
+
+        // Required permissions.
+        require_capability('mod/lesson:addinstance', $context);
+        require_capability('moodle/course:managefiles', $context);
+
+        $fs = get_file_storage();
+        $usercontext = \context_user::instance($USER->id);
+        $files = $fs->get_area_files($context->id, 'mod_lesson', 'intro', 0);
+        foreach ($files as $file) {
+            if  ($file->get_filename() == $filename) {
+                $file->delete();
+            }
+
+        }
+
+        $files = $fs->get_area_files($usercontext->id, 'user', 'draft', $itemid);
+        foreach ($files as $file) {
+            $fileinfo = [
+                'contextid' =>  $context->id,   // ID of the context.
+                'component' => 'mod_lesson', // Your component name.
+                'filearea'  => 'intro',
+                'itemid'    =>  0,              // Usually = ID of row in table.
+                'filepath'  =>  '/',            // Any path beginning and ending in /.
+                'filename'  =>  $file->get_filename(),   // Any filename.
+            ];
+
+            if  ($file->get_filename() == $filename ) {
+                $fs->create_file_from_storedfile($fileinfo, $file);
+
+                $url = moodle_url::make_draftfile_url(
+                    $file->get_itemid(),
+                    $file->get_filepath(),
+                    $file->get_filename(),
+                    false
+                );
+                break;
+            }
+
+        }
+
+        $instance->coursemodule = $cmid;
+        $instance->instance = $cm->instance;
+        $instance->id = $cm->instance;        
+        $instance->id = lesson_update_instance($instance,null);
+        $update = [
+            'message' => 'Successful',
+            'id' => $cmid,
+        ];
+        return $update;
+    }
+
+    /**
+     * Obtains the Parameter which will be returned.
+     * @return external_description
+     */
+    public static function local_sync_service_lesson_save_attachment_returns() {
+        return new external_single_structure(
+            array(
+                'message' => new external_value( PARAM_TEXT, 'if the execution was successful' ),
+                'id' => new external_value( PARAM_TEXT, 'cmid of the new module' ),
+            )
+        );
+    }
+
+
+
+    /**
+     * Defines the necessary method parameters.
+     * @return external_function_parameters
+     */
+    public static function local_sync_service_lessonpage_save_attachment_parameters() {
+        return new external_function_parameters(
+            array(
+                'cmid' => new external_value( PARAM_TEXT, 'id of module' ),
+                'itemid' => new external_value( PARAM_TEXT, 'id of draft area where file uploaded' ),
+                'pageid' => new external_value( PARAM_TEXT, 'pageid of lesson content page' ),
+                'filename' => new external_value( PARAM_TEXT, 'filename' )
+            )
+        );
+    }
+
+
+    /**
+     *
+     * @param $cmdid The  id of the lesson module
+     * @param $itemid File to publish.
+     * @return $update Message: Successful and $cmid of the new Module.
+     */
+    public static function local_sync_service_lessonpage_save_attachment($cmid, $itemid, $pageid, $filename) {
+        global $DB, $CFG,$USER;
+
+        require_once($CFG->dirroot . '/mod/' . '/lesson' . '/lib.php');
+
+        // Parameter validation.
+        $params = self::validate_parameters(
+            self::local_sync_service_lessonpage_save_attachment_parameters(),
+            array(
+                'cmid' => $cmid,
+                'itemid' => $itemid,
+                'pageid' => $pageid,
+                'filename' => $filename
+            )
+        );
+
+        $cm = get_coursemodule_from_id('lesson', $cmid, 0, false, MUST_EXIST);
+        $instance = $DB->get_record('lesson', array('id' => $cm->instance), '*', MUST_EXIST);
+        $context = context_module::instance($cmid);
+        self::validate_context($context);
+
+        // Required permissions.
+        require_capability('mod/lesson:addinstance', $context);
+        require_capability('moodle/course:managefiles', $context);
+
+        $fs = get_file_storage();
+        $usercontext = \context_user::instance($USER->id);
+        $files = $fs->get_area_files($context->id, 'mod_lesson', 'page_contents', $pageid);
+        foreach ($files as $file) {
+            if  ($file->get_filename() == $filename) {
+                $file->delete();
+            }
+        }
+
+        $files = $fs->get_area_files($usercontext->id, 'user', 'draft', $itemid);
+        foreach ($files as $file) {
+        
+            $fileinfo = [
+                'contextid' =>  $context->id,   // ID of the context.
+                'component' => 'mod_lesson', // Your component name.
+                'filearea'  => 'page_contents',
+                'itemid'    =>  $pageid,              // ID of row in table mdl_lesson_page
+                'filepath'  =>  '/',            // Any path beginning and ending in /.
+                'filename'  =>  $file->get_filename(),   // Any filename.
+            ];
+
+            if  ($file->get_filename() == $filename ) {
+                $fs->create_file_from_storedfile($fileinfo, $file);
+
+                $url = moodle_url::make_draftfile_url(
+                    $file->get_itemid(),
+                    $file->get_filepath(),
+                    $file->get_filename(),
+                    false
+                );
+                break;
+            }
+
+        }
+
+        $instance->coursemodule = $cmid;
+        $instance->instance = $cm->instance;
+        $instance->id = $cm->instance;        
+        $instance->id = lesson_update_instance($instance,null);
+
+        $update = [
+            'message' => 'Successful',
+            'id' => $cmid,
+        ];
+        return $update;
+    }
+
+    /**
+     * Obtains the Parameter which will be returned.
+     * @return external_description
+     */
+    public static function local_sync_service_lessonpage_save_attachment_returns() {
+        return new external_single_structure(
+            array(
+                'message' => new external_value( PARAM_TEXT, 'if the execution was successful' ),
+                'id' => new external_value( PARAM_TEXT, 'cmid of the new module' ),
+            )
+        );
+    }
 }
 
