@@ -250,7 +250,7 @@ $services = array(
             'core_course_get_user_administration_options',
 
         ),
-        'restrictedusers' => 1,
+        'restrictedusers' => 0,
         'enabled' => 1,
         'shortname' => 'sync_service',
         'downloadfiles' => 1,

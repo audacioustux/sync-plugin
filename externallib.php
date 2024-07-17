@@ -192,7 +192,7 @@ class local_sync_service_external extends external_api {
         $cm->id = add_course_module( $cm );
         $cmid = $cm->id;
 
-        $sectionid = course_add_cm_to_section($params['courseid'], $cmid, $params['sectionnum'], $params['beforemod']);
+        course_add_cm_to_section($params['courseid'], $cmid, $params['sectionnum'], $params['beforemod']);
 
         $update = [
             'message' => 'Successful',
@@ -294,7 +294,7 @@ class local_sync_service_external extends external_api {
         $instance->files = $params['itemid'];
         $instance->id = resource_add_instance($instance, null);
 
-        $sectionid = course_add_cm_to_section($params['courseid'], $cmid, $params['sectionnum'], $params['beforemod']);
+        course_add_cm_to_section($params['courseid'], $cmid, $params['sectionnum'], $params['beforemod']);
 
         $update = [
             'message' => 'Successful',
@@ -465,7 +465,7 @@ class local_sync_service_external extends external_api {
         $instance->files = $params['itemid'];
         $instance->id = folder_add_instance($instance, null);
 
-        $sectionid = course_add_cm_to_section($params['courseid'], $cmid, $params['sectionnum'], $params['beforemod']);
+        course_add_cm_to_section($params['courseid'], $cmid, $params['sectionnum'], $params['beforemod']);
 
         $update = [
             'message' => 'Successful',
