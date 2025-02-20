@@ -15,6 +15,7 @@
 // along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
 use core_completion\progress;
+
 require_once(__DIR__ . '/../../config.php');
 require_once($CFG->libdir . '/externallib.php');
 require_once($CFG->dirroot . '/user/lib.php');
@@ -25,7 +26,8 @@ defined('MOODLE_INTERNAL') || die();
 
 
 
-function debug($data) {
+function debug($data)
+{
     $output = $data;
     if (is_array($output))
         $output = implode(',', $output);
@@ -42,17 +44,19 @@ function debug($data) {
  * @copyright 2022 Daniel Schröter
  * @license https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class local_sync_service_external extends external_api {
+class local_sync_service_external extends external_api
+{
     /**
      * Defines the necessary method parameters.
      * @return external_function_parameters
      */
-    public static function local_sync_service_add_new_section_parameters() {
+    public static function local_sync_service_add_new_section_parameters()
+    {
         return new external_function_parameters(
             array(
-                'courseid' => new external_value( PARAM_TEXT, 'id of course' ),
-                'sectionname' => new external_value( PARAM_TEXT, 'name of section' ),
-                'sectionnum' => new external_value( PARAM_TEXT, 'position of the new section ' ),
+                'courseid' => new external_value(PARAM_TEXT, 'id of course'),
+                'sectionname' => new external_value(PARAM_TEXT, 'name of section'),
+                'sectionnum' => new external_value(PARAM_TEXT, 'position of the new section '),
             )
         );
     }
@@ -65,11 +69,12 @@ class local_sync_service_external extends external_api {
      * @param $sectionnum The position of the section inside the course, will be placed before a exisiting section with same sectionnum.
      * @return $update Message: Successful.
      */
-    public static function local_sync_service_add_new_section($courseid, $sectionname, $sectionnum) {
+    public static function local_sync_service_add_new_section($courseid, $sectionname, $sectionnum)
+    {
         global $DB, $CFG;
         // Parameter validation.
         $params = self::validate_parameters(
-        self::local_sync_service_add_new_section_parameters(),
+            self::local_sync_service_add_new_section_parameters(),
             array(
                 'courseid' => $courseid,
                 'sectionname' => $sectionname,
@@ -103,10 +108,11 @@ class local_sync_service_external extends external_api {
      * Obtains the Parameter which will be returned.
      * @return external_description
      */
-    public static function local_sync_service_add_new_section_returns() {
+    public static function local_sync_service_add_new_section_returns()
+    {
         return new external_single_structure(
             array(
-                'message' => new external_value( PARAM_TEXT, 'if the execution was successful' ),
+                'message' => new external_value(PARAM_TEXT, 'if the execution was successful'),
             )
         );
     }
@@ -116,16 +122,17 @@ class local_sync_service_external extends external_api {
      * Defines the necessary method parameters.
      * @return external_function_parameters
      */
-    public static function local_sync_service_add_new_course_module_url_parameters() {
+    public static function local_sync_service_add_new_course_module_url_parameters()
+    {
         return new external_function_parameters(
             array(
-                'courseid' => new external_value( PARAM_TEXT, 'id of course' ),
-                'sectionnum' => new external_value( PARAM_TEXT, 'relative number of the section' ),
-                'urlname' => new external_value( PARAM_TEXT, 'displayed mod name' ),
-                'url' => new external_value( PARAM_TEXT, 'url to insert' ),
-                'time' => new external_value( PARAM_TEXT, 'defines the mod. visibility', VALUE_DEFAULT, null ),
-                'visible' => new external_value( PARAM_TEXT, 'defines the mod. visibility' ),
-                'beforemod' => new external_value( PARAM_TEXT, 'mod to set before', VALUE_DEFAULT, null ),
+                'courseid' => new external_value(PARAM_TEXT, 'id of course'),
+                'sectionnum' => new external_value(PARAM_TEXT, 'relative number of the section'),
+                'urlname' => new external_value(PARAM_TEXT, 'displayed mod name'),
+                'url' => new external_value(PARAM_TEXT, 'url to insert'),
+                'time' => new external_value(PARAM_TEXT, 'defines the mod. visibility', VALUE_DEFAULT, null),
+                'visible' => new external_value(PARAM_TEXT, 'defines the mod. visibility'),
+                'beforemod' => new external_value(PARAM_TEXT, 'mod to set before', VALUE_DEFAULT, null),
             )
         );
     }
@@ -143,7 +150,8 @@ class local_sync_service_external extends external_api {
      * @param $beforemod Optional parameter, a Module where the new Module should be placed before.
      * @return $update Message: Successful and $cmid of the new Module.
      */
-    public static function local_sync_service_add_new_course_module_url($courseid, $sectionnum, $urlname, $url, $time = null, $visible, $beforemod = null) {
+    public static function local_sync_service_add_new_course_module_url($courseid, $sectionnum, $urlname, $url, $time = null, $visible, $beforemod = null)
+    {
         global $DB, $CFG;
         require_once($CFG->dirroot . '/mod/' . '/url' . '/lib.php');
 
@@ -180,16 +188,16 @@ class local_sync_service_external extends external_api {
 
         $cm = new \stdClass();
         $cm->course     = $params['courseid'];
-        $cm->module     = $DB->get_field( 'modules', 'id', array('name' => $modulename) );
+        $cm->module     = $DB->get_field('modules', 'id', array('name' => $modulename));
         $cm->instance   = $instance->id;
         $cm->section    = $params['sectionnum'];
         if (!is_null($params['time'])) {
             $cm->availability = "{\"op\":\"&\",\"c\":[{\"type\":\"date\",\"d\":\">=\",\"t\":" . $params['time'] . "}],\"showc\":[" . $params['visible'] . "]}";
-        } else if ( $params['visible'] === 'false' ) {
+        } else if ($params['visible'] === 'false') {
             $cm->visible = 0;
         }
 
-        $cm->id = add_course_module( $cm );
+        $cm->id = add_course_module($cm);
         $cmid = $cm->id;
 
         course_add_cm_to_section($params['courseid'], $cmid, $params['sectionnum'], $params['beforemod']);
@@ -205,11 +213,12 @@ class local_sync_service_external extends external_api {
      * Obtains the Parameter which will be returned.
      * @return external_description
      */
-    public static function local_sync_service_add_new_course_module_url_returns() {
+    public static function local_sync_service_add_new_course_module_url_returns()
+    {
         return new external_single_structure(
             array(
-                'message' => new external_value( PARAM_TEXT, 'if the execution was successful' ),
-                'id' => new external_value( PARAM_TEXT, 'cmid of the new module' ),
+                'message' => new external_value(PARAM_TEXT, 'if the execution was successful'),
+                'id' => new external_value(PARAM_TEXT, 'cmid of the new module'),
             )
         );
     }
@@ -218,16 +227,121 @@ class local_sync_service_external extends external_api {
      * Defines the necessary method parameters.
      * @return external_function_parameters
      */
-    public static function local_sync_service_add_new_course_module_resource_parameters() {
+    public static function local_sync_service_add_new_course_module_label_parameters()
+    {
         return new external_function_parameters(
             array(
-                'courseid' => new external_value( PARAM_TEXT, 'id of course' ),
-                'sectionnum' => new external_value( PARAM_TEXT, 'relative number of the section' ),
-                'itemid' => new external_value( PARAM_TEXT, 'id of the upload' ),
-                'displayname' => new external_value( PARAM_TEXT, 'displayed mod name' ),
-                'time' => new external_value( PARAM_TEXT, 'defines the mod. availability', VALUE_DEFAULT, null ),
-                'visible' => new external_value( PARAM_TEXT, 'defines the mod. visibility' ),
-                'beforemod' => new external_value( PARAM_TEXT, 'mod to set before', VALUE_DEFAULT, null ),
+                'courseid' => new external_value(PARAM_TEXT, 'id of course'),
+                'sectionnum' => new external_value(PARAM_TEXT, 'relative number of the section'),
+                'labelname' => new external_value(PARAM_TEXT, 'displayed mod name'),
+                'content' => new external_value(PARAM_TEXT, 'content to insert'),
+                'time' => new external_value(PARAM_TEXT, 'defines the mod. visibility', VALUE_DEFAULT, null),
+                'visible' => new external_value(PARAM_TEXT, 'defines the mod. visibility'),
+                'beforemod' => new external_value(PARAM_TEXT, 'mod to set before', VALUE_DEFAULT, null),
+            )
+        );
+    }
+
+    /**
+     * Method to create a new course module containing a label.
+     *
+     * @param $courseid The course id.
+     * @param $sectionnum The number of the section inside the course.
+     * @param $labelname Displayname of the Module.
+     * @param $content Content to publish.
+     * @param $time availability time.
+     * @param $visible visible for course members.
+     * @param $beforemod Optional parameter, a Module where the new Module should be placed before.
+     * @return $update Message: Successful and $cmid of the new Module.
+     */
+    public static function local_sync_service_add_new_course_module_label($courseid, $sectionnum, $labelname, $content, $time = null, $visible, $beforemod = null)
+    {
+        global $DB, $CFG;
+        require_once($CFG->dirroot . '/mod/' . '/label' . '/lib.php');
+
+        // Parameter validation.
+        $params = self::validate_parameters(
+            self::local_sync_service_add_new_course_module_label_parameters(),
+            array(
+                'courseid' => $courseid,
+                'sectionnum' => $sectionnum,
+                'labelname' => $labelname,
+                'content' => $content,
+                'time' => $time,
+                'visible' => $visible,
+                'beforemod' => $beforemod,
+            )
+        );
+
+        // Ensure the current user has required permission in this course.
+        $context = context_course::instance($params['courseid']);
+        self::validate_context($context);
+
+        // Required permissions.
+        require_capability('mod/label:addinstance', $context);
+
+        $instance = new \stdClass();
+        $instance->course = $params['courseid'];
+        $instance->name = $params['labelname'];
+        $instance->intro = null;
+        $instance->introformat = \FORMAT_HTML;
+        $instance->intro = $params['content'];
+        $instance->id = label_add_instance($instance, null);
+
+        $modulename = 'label';
+
+        $cm = new \stdClass();
+        $cm->course     = $params['courseid'];
+        $cm->module     = $DB->get_field('modules', 'id', array('name' => $modulename));
+        $cm->instance   = $instance->id;
+        $cm->section    = $params['sectionnum'];
+        if (!is_null($params['time'])) {
+            $cm->availability = "{\"op\":\"&\",\"c\":[{\"type\":\"date\",\"d\":\">=\",\"t\":" . $params['time'] . "}],\"showc\":[" . $params['visible'] . "]}";
+        } else if ($params['visible'] === 'false') {
+            $cm->visible = 0;
+        }
+
+        $cm->id = add_course_module($cm);
+        $cmid = $cm->id;
+
+        course_add_cm_to_section($params['courseid'], $cmid, $params['sectionnum'], $params['beforemod']);
+
+        $update = [
+            'message' => 'Successful',
+            'id' => $cmid,
+        ];
+        return $update;
+    }
+
+    /**
+     * Obtains the Parameter which will be returned.
+     * @return external_description
+     */
+    public static function local_sync_service_add_new_course_module_label_returns()
+    {
+        return new external_single_structure(
+            array(
+                'message' => new external_value(PARAM_TEXT, 'if the execution was successful'),
+                'id' => new external_value(PARAM_TEXT, 'cmid of the new module'),
+            )
+        );
+    }
+
+    /**
+     * Defines the necessary method parameters.
+     * @return external_function_parameters
+     */
+    public static function local_sync_service_add_new_course_module_resource_parameters()
+    {
+        return new external_function_parameters(
+            array(
+                'courseid' => new external_value(PARAM_TEXT, 'id of course'),
+                'sectionnum' => new external_value(PARAM_TEXT, 'relative number of the section'),
+                'itemid' => new external_value(PARAM_TEXT, 'id of the upload'),
+                'displayname' => new external_value(PARAM_TEXT, 'displayed mod name'),
+                'time' => new external_value(PARAM_TEXT, 'defines the mod. availability', VALUE_DEFAULT, null),
+                'visible' => new external_value(PARAM_TEXT, 'defines the mod. visibility'),
+                'beforemod' => new external_value(PARAM_TEXT, 'mod to set before', VALUE_DEFAULT, null),
             )
         );
     }
@@ -244,7 +358,8 @@ class local_sync_service_external extends external_api {
      * @param $beforemod Optional parameter, a Module where the new Module should be placed before.
      * @return $update Message: Successful and $cmid of the new Module.
      */
-    public static function local_sync_service_add_new_course_module_resource($courseid, $sectionnum, $itemid, $displayname, $time = null, $visible, $beforemod = null) {
+    public static function local_sync_service_add_new_course_module_resource($courseid, $sectionnum, $itemid, $displayname, $time = null, $visible, $beforemod = null)
+    {
         global $DB, $CFG;
         require_once($CFG->dirroot . '/mod/' . '/resource' . '/lib.php');
         require_once($CFG->dirroot . '/availability/' . '/condition' . '/date' . '/classes' . '/condition.php');
@@ -274,11 +389,11 @@ class local_sync_service_external extends external_api {
 
         $cm = new \stdClass();
         $cm->course     = $params['courseid'];
-        $cm->module     = $DB->get_field('modules', 'id', array( 'name' => $modulename ));
+        $cm->module     = $DB->get_field('modules', 'id', array('name' => $modulename));
         $cm->section    = $params['sectionnum'];
         if (!is_null($params['time'])) {
             $cm->availability = "{\"op\":\"&\",\"c\":[{\"type\":\"date\",\"d\":\">=\",\"t\":" . $params['time'] . "}],\"showc\":[" . $params['visible'] . "]}";
-        } else if ( $params['visible'] === 'false' ) {
+        } else if ($params['visible'] === 'false') {
             $cm->visible = 0;
         }
         $cm->id = add_course_module($cm);
@@ -307,11 +422,12 @@ class local_sync_service_external extends external_api {
      * Obtains the Parameter which will be returned.
      * @return external_description
      */
-    public static function local_sync_service_add_new_course_module_resource_returns() {
+    public static function local_sync_service_add_new_course_module_resource_returns()
+    {
         return new external_single_structure(
             array(
-                'message' => new external_value( PARAM_TEXT, 'if the execution was successful' ),
-                'id' => new external_value( PARAM_TEXT, 'cmid of the new module' ),
+                'message' => new external_value(PARAM_TEXT, 'if the execution was successful'),
+                'id' => new external_value(PARAM_TEXT, 'cmid of the new module'),
             )
         );
     }
@@ -320,12 +436,13 @@ class local_sync_service_external extends external_api {
      * Defines the necessary method parameters.
      * @return external_function_parameters
      */
-    public static function local_sync_service_move_module_to_specific_position_parameters() {
+    public static function local_sync_service_move_module_to_specific_position_parameters()
+    {
         return new external_function_parameters(
             array(
-                'cmid' => new external_value( PARAM_TEXT, 'id of module' ),
-                'sectionid' => new external_value( PARAM_TEXT, 'relative number of the section' ),
-                'beforemod' => new external_value( PARAM_TEXT, 'mod to set before', VALUE_DEFAULT, null ),
+                'cmid' => new external_value(PARAM_TEXT, 'id of module'),
+                'sectionid' => new external_value(PARAM_TEXT, 'relative number of the section'),
+                'beforemod' => new external_value(PARAM_TEXT, 'mod to set before', VALUE_DEFAULT, null),
             )
         );
     }
@@ -338,7 +455,8 @@ class local_sync_service_external extends external_api {
      * @param $beforemod Optional parameter, a Module where the new Module should be placed before.
      * @return $update Message: Successful and $cmid of the new Module.
      */
-    public static function local_sync_service_move_module_to_specific_position($cmid, $sectionid, $beforemod = null) {
+    public static function local_sync_service_move_module_to_specific_position($cmid, $sectionid, $beforemod = null)
+    {
         global $DB, $CFG;
         require_once($CFG->dirroot . '/course/' . '/lib.php');
 
@@ -353,8 +471,8 @@ class local_sync_service_external extends external_api {
         );
 
         // Ensure the current user has required permission.
-        $modcontext = context_module::instance( $params['cmid'] );
-        self::validate_context( $modcontext );
+        $modcontext = context_module::instance($params['cmid']);
+        self::validate_context($modcontext);
 
         $cm = get_coursemodule_from_id('', $params['cmid']);
 
@@ -365,7 +483,7 @@ class local_sync_service_external extends external_api {
         // Required permissions.
         require_capability('moodle/course:movesections', $context);
 
-        $section = $DB->get_record('course_sections', array( 'id' => $params['sectionid'], 'course' => $cm->course ));
+        $section = $DB->get_record('course_sections', array('id' => $params['sectionid'], 'course' => $cm->course));
 
         moveto_module($cm, $section, $params['beforemod']);
 
@@ -379,10 +497,11 @@ class local_sync_service_external extends external_api {
      * Obtains the Parameter which will be returned.
      * @return external_description
      */
-    public static function local_sync_service_move_module_to_specific_position_returns() {
+    public static function local_sync_service_move_module_to_specific_position_returns()
+    {
         return new external_single_structure(
             array(
-                'message' => new external_value( PARAM_TEXT, 'if the execution was successful' )
+                'message' => new external_value(PARAM_TEXT, 'if the execution was successful')
             )
         );
     }
@@ -391,16 +510,17 @@ class local_sync_service_external extends external_api {
      * Defines the necessary method parameters.
      * @return external_function_parameters
      */
-    public static function local_sync_service_add_new_course_module_directory_parameters() {
+    public static function local_sync_service_add_new_course_module_directory_parameters()
+    {
         return new external_function_parameters(
             array(
-                'courseid' => new external_value( PARAM_TEXT, 'id of course' ),
-                'sectionnum' => new external_value( PARAM_TEXT, 'relative number of the section' ),
-                'itemid' => new external_value( PARAM_TEXT, 'id of the upload' ),
-                'displayname' => new external_value( PARAM_TEXT, 'displayed mod name' ),
-                'time' => new external_value( PARAM_TEXT, 'defines the mod. visibility', VALUE_DEFAULT, null ),
-                'visible' => new external_value( PARAM_TEXT, 'defines the mod. visibility' ),
-                'beforemod' => new external_value( PARAM_TEXT, 'mod to set before', VALUE_DEFAULT, null ),
+                'courseid' => new external_value(PARAM_TEXT, 'id of course'),
+                'sectionnum' => new external_value(PARAM_TEXT, 'relative number of the section'),
+                'itemid' => new external_value(PARAM_TEXT, 'id of the upload'),
+                'displayname' => new external_value(PARAM_TEXT, 'displayed mod name'),
+                'time' => new external_value(PARAM_TEXT, 'defines the mod. visibility', VALUE_DEFAULT, null),
+                'visible' => new external_value(PARAM_TEXT, 'defines the mod. visibility'),
+                'beforemod' => new external_value(PARAM_TEXT, 'mod to set before', VALUE_DEFAULT, null),
             )
         );
     }
@@ -417,7 +537,8 @@ class local_sync_service_external extends external_api {
      * @param $beforemod Optional parameter, a Module where the new Module should be placed before.
      * @return $update Message: Successful and $cmid of the new Module.
      */
-    public static function local_sync_service_add_new_course_module_directory($courseid, $sectionnum, $itemid, $displayname, $time = null, $visible, $beforemod = null) {
+    public static function local_sync_service_add_new_course_module_directory($courseid, $sectionnum, $itemid, $displayname, $time = null, $visible, $beforemod = null)
+    {
         global $DB, $CFG;
         require_once($CFG->dirroot . '/mod/' . '/folder' . '/lib.php');
 
@@ -446,11 +567,11 @@ class local_sync_service_external extends external_api {
 
         $cm = new \stdClass();
         $cm->course     = $params['courseid'];
-        $cm->module     = $DB->get_field('modules', 'id', array( 'name' => $modulename ));
+        $cm->module     = $DB->get_field('modules', 'id', array('name' => $modulename));
         $cm->section    = $params['sectionnum'];
         if (!is_null($params['time'])) {
             $cm->availability = "{\"op\":\"&\",\"c\":[{\"type\":\"date\",\"d\":\">=\",\"t\":" . $params['time'] . "}],\"showc\":[" . $params['visible'] . "]}";
-        } else if ( $params['visible'] === 'false' ) {
+        } else if ($params['visible'] === 'false') {
             $cm->visible = 0;
         }
         $cm->id = add_course_module($cm);
@@ -461,7 +582,7 @@ class local_sync_service_external extends external_api {
         $instance->name = $params['displayname'];
         $instance->coursemodule = $cmid;
         $instance->introformat = FORMAT_HTML;
-        $instance->intro = '<p>'.$params['displayname'].'</p>';
+        $instance->intro = '<p>' . $params['displayname'] . '</p>';
         $instance->files = $params['itemid'];
         $instance->id = folder_add_instance($instance, null);
 
@@ -478,11 +599,12 @@ class local_sync_service_external extends external_api {
      * Obtains the Parameter which will be returned.
      * @return external_description
      */
-    public static function local_sync_service_add_new_course_module_directory_returns() {
+    public static function local_sync_service_add_new_course_module_directory_returns()
+    {
         return new external_single_structure(
             array(
-                'message' => new external_value( PARAM_TEXT, 'if the execution was successful' ),
-                'id' => new external_value( PARAM_TEXT, 'cmid of the new module' ),
+                'message' => new external_value(PARAM_TEXT, 'if the execution was successful'),
+                'id' => new external_value(PARAM_TEXT, 'cmid of the new module'),
             )
         );
     }
@@ -491,12 +613,13 @@ class local_sync_service_external extends external_api {
      * Defines the necessary method parameters.
      * @return external_function_parameters
      */
-    public static function local_sync_service_add_files_to_directory_parameters() {
+    public static function local_sync_service_add_files_to_directory_parameters()
+    {
         return new external_function_parameters(
             array(
-                'courseid' => new external_value( PARAM_TEXT, 'id of course' ),
-                'itemid' => new external_value( PARAM_TEXT, 'id of the upload' ),
-                'contextid' => new external_value( PARAM_TEXT, 'contextid of folder' ),
+                'courseid' => new external_value(PARAM_TEXT, 'id of course'),
+                'itemid' => new external_value(PARAM_TEXT, 'id of the upload'),
+                'contextid' => new external_value(PARAM_TEXT, 'contextid of folder'),
             )
         );
     }
@@ -509,7 +632,8 @@ class local_sync_service_external extends external_api {
      * @param $contextid Modules contextid.
      * @return $update Message: Successful.
      */
-    public static function local_sync_service_add_files_to_directory($courseid, $itemid, $contextid) {
+    public static function local_sync_service_add_files_to_directory($courseid, $itemid, $contextid)
+    {
         global $CFG;
         require_once($CFG->dirroot . '/mod/' . '/folder' . '/lib.php');
 
@@ -542,11 +666,12 @@ class local_sync_service_external extends external_api {
      * Obtains the Parameter which will be returned.
      * @return external_description
      */
-    public static function local_sync_service_add_files_to_directory_returns() {
+    public static function local_sync_service_add_files_to_directory_returns()
+    {
         return new external_single_structure(
             array(
-                'message' => new external_value( PARAM_TEXT, 'if the execution was successful' ),
-                )
+                'message' => new external_value(PARAM_TEXT, 'if the execution was successful'),
+            )
         );
     }
 
@@ -554,16 +679,17 @@ class local_sync_service_external extends external_api {
      * Defines the necessary method parameters.
      * @return external_function_parameters
      */
-    public static function local_sync_service_add_new_course_module_page_parameters() {
+    public static function local_sync_service_add_new_course_module_page_parameters()
+    {
         return new external_function_parameters(
             array(
-                'courseid' => new external_value( PARAM_TEXT, 'id of course' ),
-                'sectionnum' => new external_value( PARAM_TEXT, 'relative number of the section' ),
-                'urlname' => new external_value( PARAM_TEXT, 'displayed mod name' ),
-                'content' => new external_value( PARAM_TEXT, 'Content to insert' ),
-                'time' => new external_value( PARAM_TEXT, 'defines the mod. visibility', VALUE_DEFAULT, null ),
-                'visible' => new external_value( PARAM_TEXT, 'defines the mod. visibility' ),
-                'beforemod' => new external_value( PARAM_TEXT, 'mod to set before', VALUE_DEFAULT, null ),
+                'courseid' => new external_value(PARAM_TEXT, 'id of course'),
+                'sectionnum' => new external_value(PARAM_TEXT, 'relative number of the section'),
+                'urlname' => new external_value(PARAM_TEXT, 'displayed mod name'),
+                'content' => new external_value(PARAM_TEXT, 'Content to insert'),
+                'time' => new external_value(PARAM_TEXT, 'defines the mod. visibility', VALUE_DEFAULT, null),
+                'visible' => new external_value(PARAM_TEXT, 'defines the mod. visibility'),
+                'beforemod' => new external_value(PARAM_TEXT, 'mod to set before', VALUE_DEFAULT, null),
             )
         );
     }
@@ -581,7 +707,8 @@ class local_sync_service_external extends external_api {
      * @param $beforemod Optional parameter, a Module where the new Module should be placed before.
      * @return $update Message: Successful and $cmid of the new Module.
      */
-    public static function local_sync_service_add_new_course_module_page($courseid, $sectionnum, $urlname, $content, $time = null, $visible, $beforemod = null) {
+    public static function local_sync_service_add_new_course_module_page($courseid, $sectionnum, $urlname, $content, $time = null, $visible, $beforemod = null)
+    {
         global $DB, $CFG;
         require_once($CFG->dirroot . '/mod/' . '/page' . '/lib.php');
 
@@ -613,15 +740,15 @@ class local_sync_service_external extends external_api {
         $modulename = 'page';
         $cm = new \stdClass();
         $cm->course     = $params['courseid'];
-        $cm->module     = $DB->get_field( 'modules', 'id', array('name' => $modulename) );
+        $cm->module     = $DB->get_field('modules', 'id', array('name' => $modulename));
         $cm->section    = $params['sectionnum'];
         if (!is_null($params['time'])) {
             $cm->availability = "{\"op\":\"&\",\"c\":[{\"type\":\"date\",\"d\":\">=\",\"t\":" . $params['time'] . "}],\"showc\":[" . $params['visible'] . "]}";
-        } else if ( $params['visible'] === 'false' ) {
+        } else if ($params['visible'] === 'false') {
             $cm->visible = 0;
         }
 
-        $cm->id = add_course_module( $cm );
+        $cm->id = add_course_module($cm);
         $cmid = $cm->id;
 
         $instance = new \stdClass();
@@ -629,8 +756,8 @@ class local_sync_service_external extends external_api {
         $instance->name = $params['urlname'];
         $instance->intro = null;
         $instance->introformat = \FORMAT_HTML;
-        $instance->intro = '<p>'.$params['urlname'].'</p>';
-        $instance->page = array('format' => \FORMAT_MARKDOWN,'text' => $content, 'itemid' => false);
+        $instance->intro = '<p>' . $params['urlname'] . '</p>';
+        $instance->page = array('format' => \FORMAT_MARKDOWN, 'text' => $content, 'itemid' => false);
         $instance->coursemodule = $cmid;
         $instance->id = page_add_instance($instance, $instance);
 
@@ -647,11 +774,12 @@ class local_sync_service_external extends external_api {
      * Obtains the Parameter which will be returned.
      * @return external_description
      */
-    public static function local_sync_service_add_new_course_module_page_returns() {
+    public static function local_sync_service_add_new_course_module_page_returns()
+    {
         return new external_single_structure(
             array(
-                'message' => new external_value( PARAM_TEXT, 'if the execution was successful' ),
-                'id' => new external_value( PARAM_TEXT, 'cmid of the new module' ),
+                'message' => new external_value(PARAM_TEXT, 'if the execution was successful'),
+                'id' => new external_value(PARAM_TEXT, 'cmid of the new module'),
             )
         );
     }
@@ -661,16 +789,17 @@ class local_sync_service_external extends external_api {
      * Defines the necessary method parameters.
      * @return external_function_parameters
      */
-    public static function local_sync_service_add_new_course_module_book_parameters() {
+    public static function local_sync_service_add_new_course_module_book_parameters()
+    {
         return new external_function_parameters(
             array(
-                'courseid' => new external_value( PARAM_TEXT, 'id of course' ),
-                'sectionnum' => new external_value( PARAM_TEXT, 'relative number of the section' ),
-                'urlname' => new external_value( PARAM_TEXT, 'displayed mod name' ),
-                'content' => new external_value( PARAM_TEXT, 'Content to insert' ),
-                'time' => new external_value( PARAM_TEXT, 'defines the mod. visibility', VALUE_DEFAULT, null ),
-                'visible' => new external_value( PARAM_TEXT, 'defines the mod. visibility' ),
-                'beforemod' => new external_value( PARAM_TEXT, 'mod to set before', VALUE_DEFAULT, null ),
+                'courseid' => new external_value(PARAM_TEXT, 'id of course'),
+                'sectionnum' => new external_value(PARAM_TEXT, 'relative number of the section'),
+                'urlname' => new external_value(PARAM_TEXT, 'displayed mod name'),
+                'content' => new external_value(PARAM_TEXT, 'Content to insert'),
+                'time' => new external_value(PARAM_TEXT, 'defines the mod. visibility', VALUE_DEFAULT, null),
+                'visible' => new external_value(PARAM_TEXT, 'defines the mod. visibility'),
+                'beforemod' => new external_value(PARAM_TEXT, 'mod to set before', VALUE_DEFAULT, null),
             )
         );
     }
@@ -688,7 +817,8 @@ class local_sync_service_external extends external_api {
      * @param $beforemod Optional parameter, a Module where the new Module should be placed before.
      * @return $update Message: Successful and $cmid of the new Module.
      */
-    public static function local_sync_service_add_new_course_module_book($courseid, $sectionnum, $urlname, $content, $time = null, $visible, $beforemod = null) {
+    public static function local_sync_service_add_new_course_module_book($courseid, $sectionnum, $urlname, $content, $time = null, $visible, $beforemod = null)
+    {
         global $DB, $CFG;
         require_once($CFG->dirroot . '/mod/' . '/book' . '/lib.php');
         require_once($CFG->dirroot . '/mod/' . '/book' . '/locallib.php');
@@ -721,9 +851,9 @@ class local_sync_service_external extends external_api {
         $instance->course = $params['courseid'];
         $instance->name = $params['urlname'];
         $instance->introformat = \FORMAT_HTML;
-        $instance->completionexpected=null; //todo
-        $instance->intro = '<p>'.$params['urlname'].'</p>';
-        $instance->visible=1;
+        $instance->completionexpected = null; //todo
+        $instance->intro = '<p>' . $params['urlname'] . '</p>';
+        $instance->visible = 1;
         $instance->id = book_add_instance($instance, null);
 
         debug("added book $instance->id");
@@ -732,15 +862,15 @@ class local_sync_service_external extends external_api {
         $cm = new \stdClass();
         $cm->course     = $params['courseid'];
         $cm->instance   = $instance->id;
-        $cm->module     = $DB->get_field( 'modules', 'id', array('name' => $modulename) );
+        $cm->module     = $DB->get_field('modules', 'id', array('name' => $modulename));
         $cm->section    = $params['sectionnum'];
         if (!is_null($params['time'])) {
             $cm->availability = "{\"op\":\"&\",\"c\":[{\"type\":\"date\",\"d\":\">=\",\"t\":" . $params['time'] . "}],\"showc\":[" . $params['visible'] . "]}";
-        } else if ( $params['visible'] === 'false' ) {
+        } else if ($params['visible'] === 'false') {
             $cm->visible = 0;
         }
 
-        $cm->id = add_course_module( $cm );
+        $cm->id = add_course_module($cm);
         $cmid = $cm->id;
         debug("course module added $cmid\n");
 
@@ -759,27 +889,29 @@ class local_sync_service_external extends external_api {
      * Obtains the Parameter which will be returned.
      * @return external_description
      */
-    public static function local_sync_service_add_new_course_module_book_returns() {
+    public static function local_sync_service_add_new_course_module_book_returns()
+    {
         return new external_single_structure(
             array(
-                'message' => new external_value( PARAM_TEXT, 'if the execution was successful' ),
-                'id' => new external_value( PARAM_TEXT, 'cmid of the new module' ),
+                'message' => new external_value(PARAM_TEXT, 'if the execution was successful'),
+                'id' => new external_value(PARAM_TEXT, 'cmid of the new module'),
             )
         );
     }
-//
+    //
 
 
     /**
      * Defines the necessary method parameters.
      * @return external_function_parameters
      */
-    public static function local_sync_service_import_html_in_book_parameters() {
+    public static function local_sync_service_import_html_in_book_parameters()
+    {
         return new external_function_parameters(
             array(
-                'cmid' => new external_value( PARAM_TEXT, 'course module id of book' ),
-                'itemid' => new external_value( PARAM_TEXT, 'itemid containing preloaded zip file to import in book' ),
-                'type' => new external_value( PARAM_TEXT, 'type (typezipdirs or typezipfiles)' )
+                'cmid' => new external_value(PARAM_TEXT, 'course module id of book'),
+                'itemid' => new external_value(PARAM_TEXT, 'itemid containing preloaded zip file to import in book'),
+                'type' => new external_value(PARAM_TEXT, 'type (typezipdirs or typezipfiles)')
             )
         );
     }
@@ -793,7 +925,8 @@ class local_sync_service_external extends external_api {
      * @param $type Type of import
      * @return $update Message: Successful and return value 0 if ok
      */
-    public static function local_sync_service_import_html_in_book($cmid, $itemid, $type) {
+    public static function local_sync_service_import_html_in_book($cmid, $itemid, $type)
+    {
         global $DB, $CFG, $USER;
         require_once($CFG->dirroot . '/mod/' . '/book' . '/lib.php');
         require_once($CFG->dirroot . '/mod/' . '/book' . '/locallib.php');
@@ -814,26 +947,24 @@ class local_sync_service_external extends external_api {
         $cm = get_coursemodule_from_id('book', $cmid, 0, false, MUST_EXIST);
         $context = context_module::instance($cm->id);
         self::validate_context($context);
-        $book = $DB->get_record('book', array('id'=>$cm->instance), '*', MUST_EXIST);
+        $book = $DB->get_record('book', array('id' => $cm->instance), '*', MUST_EXIST);
 
         require_capability('booktool/importhtml:import', $context);
 
         $fs = get_file_storage();
         debug("get info about itemid $itemid");
         if (!$files = $fs->get_area_files(context_user::instance($USER->id)->id, 'user', 'draft', $itemid, 'id', false)) {
-              debug("no itemid $itemid found");
-              $update = ['message' => 'Itemid not found','rv' => -1];
-        }
-        else {
+            debug("no itemid $itemid found");
+            $update = ['message' => 'Itemid not found', 'rv' => -1];
+        } else {
             $file = reset($files);
             if ($file->get_mimetype() != 'application/zip') {
                 debug("$itemid is not a zip content");
-                $update = ['message' => 'Not a zip content','rv' => -1];
-            }
-            else{
+                $update = ['message' => 'Not a zip content', 'rv' => -1];
+            } else {
                 debug("all clear, let's go");
                 toolbook_importhtml_import_chapters($file, $type, $book, $context, false);
-                $update = ['message' => 'Successful','rv' => 0];
+                $update = ['message' => 'Successful', 'rv' => 0];
             }
         }
         return $update;
@@ -843,25 +974,27 @@ class local_sync_service_external extends external_api {
      * Obtains the Parameter which will be returned.
      * @return external_description
      */
-    public static function local_sync_service_import_html_in_book_returns() {
+    public static function local_sync_service_import_html_in_book_returns()
+    {
         return new external_single_structure(
             array(
-                'message' => new external_value( PARAM_TEXT, 'if the execution was successful' ),
-                'rv' => new external_value( PARAM_TEXT, 'return value' ),
+                'message' => new external_value(PARAM_TEXT, 'if the execution was successful'),
+                'rv' => new external_value(PARAM_TEXT, 'return value'),
             )
         );
     }
 
-//
+    //
 
-   /**
+    /**
      * Defines the necessary method parameters.
      * @return external_function_parameters
      */
-    public static function local_sync_service_delete_all_chapters_from_book_parameters() {
+    public static function local_sync_service_delete_all_chapters_from_book_parameters()
+    {
         return new external_function_parameters(
             array(
-                'cmid' => new external_value( PARAM_TEXT, 'course module id of book' )
+                'cmid' => new external_value(PARAM_TEXT, 'course module id of book')
             )
         );
     }
@@ -873,7 +1006,8 @@ class local_sync_service_external extends external_api {
      * @param $cmid Course module id
      * @return $update Message: Successful and return value 0 if ok
      */
-    public static function local_sync_service_delete_all_chapters_from_book($cmid) {
+    public static function local_sync_service_delete_all_chapters_from_book($cmid)
+    {
         global $DB, $CFG, $USER;
         require_once($CFG->dirroot . '/mod/' . '/book' . '/lib.php');
         require_once($CFG->dirroot . '/mod/' . '/book' . '/locallib.php');
@@ -896,7 +1030,7 @@ class local_sync_service_external extends external_api {
         require_capability('mod/book:edit', $context);
 
         $fs = get_file_storage();
-        $book = $DB->get_record('book', array('id'=>$cm->instance), '*', MUST_EXIST);
+        $book = $DB->get_record('book', array('id' => $cm->instance), '*', MUST_EXIST);
         debug("book id $book->id\n");
 
         $chapter = $DB->get_records('book_chapters', array('bookid' => $book->id), 'pagenum', 'id, pagenum,subchapter, title, content, contentformat, hidden');
@@ -909,9 +1043,9 @@ class local_sync_service_external extends external_api {
                 // This is a top-level chapter.
                 // Make sure to remove any sub-chapters if there are any.
                 $chapters = $DB->get_recordset_select('book_chapters', 'bookid = :bookid AND pagenum > :pagenum', [
-                        'bookid' => $book->id,
-                        'pagenum' => $chapter->pagenum,
-                    ], 'pagenum');
+                    'bookid' => $book->id,
+                    'pagenum' => $chapter->pagenum,
+                ], 'pagenum');
 
                 foreach ($chapters as $ch) {
                     debug("get chapter $ch->id\n");
@@ -928,8 +1062,7 @@ class local_sync_service_external extends external_api {
                     }
                 }
                 $chapters->close();
-            }
-            else
+            } else
                 debug("no subcharters to delete\n");
 
             // Now delete the actual chapter.
@@ -949,7 +1082,7 @@ class local_sync_service_external extends external_api {
         $DB->set_field('book', 'revision', $book->revision + 1, ['id' => $book->id]);
 
         debug("all clear, let's go");
-        $update = ['message' => 'Successful','rv' => 0];
+        $update = ['message' => 'Successful', 'rv' => 0];
 
         return $update;
     }
@@ -958,11 +1091,12 @@ class local_sync_service_external extends external_api {
      * Obtains the Parameter which will be returned.
      * @return external_description
      */
-    public static function local_sync_service_delete_all_chapters_from_book_returns() {
+    public static function local_sync_service_delete_all_chapters_from_book_returns()
+    {
         return new external_single_structure(
             array(
-                'message' => new external_value( PARAM_TEXT, 'if the execution was successful' ),
-                'rv' => new external_value( PARAM_TEXT, 'return value' ),
+                'message' => new external_value(PARAM_TEXT, 'if the execution was successful'),
+                'rv' => new external_value(PARAM_TEXT, 'return value'),
             )
         );
     }
@@ -972,12 +1106,13 @@ class local_sync_service_external extends external_api {
      * Defines the necessary method parameters.
      * @return external_function_parameters
      */
-    public static function local_sync_service_update_course_module_resource_parameters() {
+    public static function local_sync_service_update_course_module_resource_parameters()
+    {
         return new external_function_parameters(
             array(
-                'cmid' => new external_value( PARAM_TEXT, 'id of module' ),
-                'itemid' => new external_value( PARAM_TEXT, 'id of the upload' ),
-                'displayname' => new external_value( PARAM_TEXT, 'displayed mod name', VALUE_DEFAULT, null  )
+                'cmid' => new external_value(PARAM_TEXT, 'id of module'),
+                'itemid' => new external_value(PARAM_TEXT, 'id of the upload'),
+                'displayname' => new external_value(PARAM_TEXT, 'displayed mod name', VALUE_DEFAULT, null)
             )
         );
     }
@@ -990,7 +1125,8 @@ class local_sync_service_external extends external_api {
      * @param $displayname Displayname of resource (optional)
      * @return $update Message: Successful and $cmid of the new Module.
      */
-    public static function local_sync_service_update_course_module_resource($cmid, $itemid, $displayname) {
+    public static function local_sync_service_update_course_module_resource($cmid, $itemid, $displayname)
+    {
         global $DB, $CFG;
         require_once($CFG->dirroot . '/mod/' . '/resource' . '/lib.php');
         require_once($CFG->dirroot . '/mod/' . '/resource' . '/locallib.php');
@@ -1050,11 +1186,12 @@ class local_sync_service_external extends external_api {
      * Obtains the Parameter which will be returned.
      * @return external_description
      */
-    public static function local_sync_service_update_course_module_resource_returns() {
+    public static function local_sync_service_update_course_module_resource_returns()
+    {
         return new external_single_structure(
             array(
-                'message' => new external_value( PARAM_TEXT, 'if the execution was successful' ),
-                'id' => new external_value( PARAM_TEXT, 'cmid of the new module' ),
+                'message' => new external_value(PARAM_TEXT, 'if the execution was successful'),
+                'id' => new external_value(PARAM_TEXT, 'cmid of the new module'),
             )
         );
     }
@@ -1064,11 +1201,12 @@ class local_sync_service_external extends external_api {
      * Defines the necessary method parameters.
      * @return external_function_parameters
      */
-    public static function local_sync_service_update_course_module_label_parameters() {
+    public static function local_sync_service_update_course_module_label_parameters()
+    {
         return new external_function_parameters(
             array(
-                'cmid' => new external_value( PARAM_TEXT, 'id of module' ),
-                'htmlbody' => new external_value( PARAM_TEXT, 'HTML name', VALUE_DEFAULT, null  ),
+                'cmid' => new external_value(PARAM_TEXT, 'id of module'),
+                'htmlbody' => new external_value(PARAM_TEXT, 'HTML name', VALUE_DEFAULT, null),
             )
         );
     }
@@ -1080,7 +1218,8 @@ class local_sync_service_external extends external_api {
      * @param $htmlbody HTML code to add to body
      * @return $update Message: Successful and $cmid of the new Module.
      */
-    public static function local_sync_service_update_course_module_label($cmid, $htmlbody) {
+    public static function local_sync_service_update_course_module_label($cmid, $htmlbody)
+    {
         global $DB, $CFG;
         require_once($CFG->dirroot . '/availability/' . '/condition' . '/date' . '/classes' . '/condition.php');
         require_once($CFG->dirroot . '/mod/' . '/label' . '/lib.php');
@@ -1107,7 +1246,7 @@ class local_sync_service_external extends external_api {
         require_capability('mod/label:addinstance', $context);
 
         $modulename = 'label';
-        $cm->module     = $DB->get_field( 'modules', 'id', array('name' => $modulename) );
+        $cm->module     = $DB->get_field('modules', 'id', array('name' => $modulename));
         $instance = new \stdClass();
         $instance->course = $cm->course;
         $instance->intro = $htmlbody;
@@ -1135,11 +1274,12 @@ class local_sync_service_external extends external_api {
      * Obtains the Parameter which will be returned.
      * @return external_description
      */
-    public static function local_sync_service_update_course_module_label_returns() {
+    public static function local_sync_service_update_course_module_label_returns()
+    {
         return new external_single_structure(
             array(
-                'message' => new external_value( PARAM_TEXT, 'if the execution was successful' ),
-                'id' => new external_value( PARAM_TEXT, 'cmid of the new module' ),
+                'message' => new external_value(PARAM_TEXT, 'if the execution was successful'),
+                'id' => new external_value(PARAM_TEXT, 'cmid of the new module'),
             )
         );
     }
@@ -1149,12 +1289,13 @@ class local_sync_service_external extends external_api {
      * Defines the necessary method parameters.
      * @return external_function_parameters
      */
-    public static function local_sync_service_update_course_module_page_parameters() {
+    public static function local_sync_service_update_course_module_page_parameters()
+    {
         return new external_function_parameters(
             array(
-                'cmid' => new external_value( PARAM_TEXT, 'id of module' ),
-                'content' => new external_value( PARAM_TEXT, 'HTML or Markdown code'  ),
-                'format' => new external_value( PARAM_TEXT, 'Markdown or HTML', VALUE_DEFAULT, \FORMAT_MARKDOWN  ),
+                'cmid' => new external_value(PARAM_TEXT, 'id of module'),
+                'content' => new external_value(PARAM_TEXT, 'HTML or Markdown code'),
+                'format' => new external_value(PARAM_TEXT, 'Markdown or HTML', VALUE_DEFAULT, \FORMAT_MARKDOWN),
             )
         );
     }
@@ -1167,7 +1308,8 @@ class local_sync_service_external extends external_api {
      * @param $format HTML or Markdown(=default)
      * @return $update Message: Successful and $cmid of the new Module.
      */
-    public static function local_sync_service_update_course_module_page($cmid, $content, $format) {
+    public static function local_sync_service_update_course_module_page($cmid, $content, $format)
+    {
         global $DB, $CFG;
         require_once($CFG->dirroot . '/mod/' . '/page' . '/lib.php');
         require_once($CFG->dirroot . '/course/' . '/modlib.php');
@@ -1193,7 +1335,7 @@ class local_sync_service_external extends external_api {
         require_capability('mod/page:addinstance', $context);
 
         $modulename = 'page';
-        $cm->module = $DB->get_field( 'modules', 'id', array('name' => $modulename) );
+        $cm->module = $DB->get_field('modules', 'id', array('name' => $modulename));
         $instance = new \stdClass();
         $instance->course = $cm->course;
         $instance->contentformat = $format;
@@ -1221,11 +1363,12 @@ class local_sync_service_external extends external_api {
      * Obtains the Parameter which will be returned.
      * @return external_description
      */
-    public static function local_sync_service_update_course_module_page_returns() {
+    public static function local_sync_service_update_course_module_page_returns()
+    {
         return new external_single_structure(
             array(
-                'message' => new external_value( PARAM_TEXT, 'if the execution was successful' ),
-                'id' => new external_value( PARAM_TEXT, 'cmid of the new module' ),
+                'message' => new external_value(PARAM_TEXT, 'if the execution was successful'),
+                'id' => new external_value(PARAM_TEXT, 'cmid of the new module'),
             )
         );
     }
@@ -1237,7 +1380,8 @@ class local_sync_service_external extends external_api {
      * @return external_function_parameters
      */
 
-     public static function local_sync_service_update_course_module_assignment_parameters() {
+    public static function local_sync_service_update_course_module_assignment_parameters()
+    {
         return new external_function_parameters(
             array(
                 'assignments' => new external_multiple_structure(
@@ -1247,7 +1391,8 @@ class local_sync_service_external extends external_api {
                             'desc' => new external_value(PARAM_TEXT, 'description of assisngment'),
                             'activity' => new external_value(PARAM_TEXT, 'activity in assignment', VALUE_OPTIONAL)
                         )
-                    ), 'assignment courses to update'
+                    ),
+                    'assignment courses to update'
                 )
             )
         );
@@ -1260,7 +1405,8 @@ class local_sync_service_external extends external_api {
      * @param $desc  HTML code to add to description
      * @return $update Message: Successful and $cmid of the new Module.
      */
-    public static function local_sync_service_update_course_module_assignment($assignments) {
+    public static function local_sync_service_update_course_module_assignment($assignments)
+    {
         global $DB, $CFG;
         require_once($CFG->dirroot . '/mod/' . '/assign' . '/lib.php');
         require_once($CFG->dirroot . '/mod/' . '/assign' . '/locallib.php');
@@ -1276,11 +1422,10 @@ class local_sync_service_external extends external_api {
                 $desc = $ass['desc'];
                 //debug(" cmid=$cmid , desc=$desc\n");
 
-                if (array_key_exists('activity', $ass) ) {
+                if (array_key_exists('activity', $ass)) {
                     $activity = $ass['activity'];
                 }
-
-            }catch (Exception $e) {
+            } catch (Exception $e) {
                 debug(" exception\n");
                 $warning = array();
                 $warning['item'] = 'assignments';
@@ -1301,7 +1446,7 @@ class local_sync_service_external extends external_api {
         self::validate_context($context);
         require_capability('mod/assign:addinstance', $context);
 
-        $dbparams = array('id'=>$cm->instance);
+        $dbparams = array('id' => $cm->instance);
         if (! $instance = $DB->get_record('assign', $dbparams, '*')) {
             return false;
         }
@@ -1317,7 +1462,7 @@ class local_sync_service_external extends external_api {
         $instance->activityformat = \FORMAT_MARKDOWN;
         $instance->coursemodule = $cmid;
         $instance->instance = $cm->instance;
-        $instance->modulename ='assign';
+        $instance->modulename = 'assign';
         $instance->type = 'mod';
         $instance->visible = true;
 
@@ -1336,25 +1481,27 @@ class local_sync_service_external extends external_api {
      * Obtains the Parameter which will be returned.
      * @return external_description
      */
-    public static function local_sync_service_update_course_module_assignment_returns() {
+    public static function local_sync_service_update_course_module_assignment_returns()
+    {
         return new external_single_structure(
             array(
-                'message' => new external_value( PARAM_TEXT, 'if the execution was successful' ),
-                'id' => new external_value( PARAM_TEXT, 'cmid of the new module' ),
+                'message' => new external_value(PARAM_TEXT, 'if the execution was successful'),
+                'id' => new external_value(PARAM_TEXT, 'cmid of the new module'),
             )
         );
     }
 
-         /**
+    /**
      * Defines the necessary method parameters.
      * @return external_function_parameters
      */
 
-     public static function local_sync_service_update_course_module_lesson_parameters() {
+    public static function local_sync_service_update_course_module_lesson_parameters()
+    {
         return new external_function_parameters(
             array(
-                'cmid' => new external_value( PARAM_INT, 'id of module' ),
-                'desc' => new external_value( PARAM_TEXT, 'description'  )               
+                'cmid' => new external_value(PARAM_INT, 'id of module'),
+                'desc' => new external_value(PARAM_TEXT, 'description')
             )
         );
     }
@@ -1366,13 +1513,14 @@ class local_sync_service_external extends external_api {
      * @param $desc  content to add to description
      * @return $update Message: Successful and $cmid of the new Module.
      */
-    public static function local_sync_service_update_course_module_lesson($cmid, $desc) {
+    public static function local_sync_service_update_course_module_lesson($cmid, $desc)
+    {
         global $DB, $CFG;
         //debug("local_sync_service_update_course_module_lesson");
-        
+
         require_once($CFG->dirroot . '/mod/' . '/lesson' . '/lib.php');
         require_once($CFG->dirroot . '/mod/' . '/lesson' . '/locallib.php');
-              
+
 
         // Parameter validation.
         $params = self::validate_parameters(
@@ -1383,23 +1531,23 @@ class local_sync_service_external extends external_api {
             )
         );
 
-       
+
         $cm = get_coursemodule_from_id('lesson', $cmid, 0, false, MUST_EXIST);
         $instance = $DB->get_record('lesson', array('id' => $cm->instance), '*', MUST_EXIST);
         $context = context_module::instance($cmid);
         self::validate_context($context);
         require_capability('mod/lesson:addinstance', $context);
 
-        $instance->intro=html_entity_decode($desc);
-        $instance->introformat = \FORMAT_MARKDOWN;        
+        $instance->intro = html_entity_decode($desc);
+        $instance->introformat = \FORMAT_MARKDOWN;
         $instance->coursemodule = $cmid;
         $instance->instance = $cm->instance;
-        $instance->modulename ='lesson';
+        $instance->modulename = 'lesson';
         $instance->type = 'mod';
-        $instance->visible = true;        
-       
+        $instance->visible = true;
+
         $instance->id = lesson_update_instance($instance, null);
- 
+
         $update = [
             'message' => 'Successful',
             'id' => $cmid,
@@ -1412,11 +1560,12 @@ class local_sync_service_external extends external_api {
      * Obtains the Parameter which will be returned.
      * @return external_description
      */
-    public static function local_sync_service_update_course_module_lesson_returns() {
+    public static function local_sync_service_update_course_module_lesson_returns()
+    {
         return new external_single_structure(
             array(
-                'message' => new external_value( PARAM_TEXT, 'if the execution was successful' ),
-                'id' => new external_value( PARAM_TEXT, 'cmid of the new module' ),
+                'message' => new external_value(PARAM_TEXT, 'if the execution was successful'),
+                'id' => new external_value(PARAM_TEXT, 'cmid of the new module'),
             )
         );
     }
@@ -1427,14 +1576,15 @@ class local_sync_service_external extends external_api {
      * @return external_function_parameters
      */
 
-     public static function local_sync_service_update_course_module_lesson_contentpage_parameters() {
+    public static function local_sync_service_update_course_module_lesson_contentpage_parameters()
+    {
         return new external_function_parameters(
             array(
-                'cmid' => new external_value( PARAM_INT, 'id of module' ),
-                'pageid' => new external_value( PARAM_INT, 'pageid of lesson content' ),
-                'title' => new external_value( PARAM_TEXT, 'title of lesson content page',VALUE_OPTIONAL ),
-                'content' => new external_value( PARAM_TEXT, 'HTML or Markdown code'  ),
-               
+                'cmid' => new external_value(PARAM_INT, 'id of module'),
+                'pageid' => new external_value(PARAM_INT, 'pageid of lesson content'),
+                'title' => new external_value(PARAM_TEXT, 'title of lesson content page', VALUE_OPTIONAL),
+                'content' => new external_value(PARAM_TEXT, 'HTML or Markdown code'),
+
             )
         );
     }
@@ -1446,7 +1596,8 @@ class local_sync_service_external extends external_api {
      * @param $desc  content to add to description
      * @return $update Message: Successful and $cmid of the new Module.
      */
-    public static function local_sync_service_update_course_module_lesson_contentpage($cmid, $pageid, $title, $content) {
+    public static function local_sync_service_update_course_module_lesson_contentpage($cmid, $pageid, $title, $content)
+    {
         global $DB, $CFG;
         require_once($CFG->dirroot . '/mod/' . '/lesson' . '/lib.php');
         require_once($CFG->dirroot . '/mod/' . '/lesson' . '/locallib.php');
@@ -1454,14 +1605,14 @@ class local_sync_service_external extends external_api {
 
         //debug("local_sync_service_update_course_module_lesson_contentpage\n");
 
-          // Parameter validation.
-         $params = self::validate_parameters(
+        // Parameter validation.
+        $params = self::validate_parameters(
             self::local_sync_service_update_course_module_lesson_contentpage_parameters(),
             array(
                 'cmid' => $cmid,
                 'pageid' => $pageid,
                 'title' => $title,
-                'content' => $content                
+                'content' => $content
             )
         );
         $cm = get_coursemodule_from_id('lesson', $cmid, 0, false, MUST_EXIST);
@@ -1469,13 +1620,13 @@ class local_sync_service_external extends external_api {
         $context = context_module::instance($cmid);
         self::validate_context($context);
         require_capability('mod/lesson:addinstance', $context);
-        
+
         $lesson = new Lesson($instance);
         $page = $lesson->load_page($pageid);
         $prop = $page->properties();
-        $prop->contents=html_entity_decode($content);        
-        if (!empty($title)) {            
-            $prop->title=$title;
+        $prop->contents = html_entity_decode($content);
+        if (!empty($title)) {
+            $prop->title = $title;
         }
         $DB->update_record("lesson_pages", $prop);
 
@@ -1491,27 +1642,29 @@ class local_sync_service_external extends external_api {
      * Obtains the Parameter which will be returned.
      * @return external_description
      */
-    public static function local_sync_service_update_course_module_lesson_contentpage_returns() {
+    public static function local_sync_service_update_course_module_lesson_contentpage_returns()
+    {
         return new external_single_structure(
             array(
-                'message' => new external_value( PARAM_TEXT, 'if the execution was successful' ),
-                'id' => new external_value( PARAM_TEXT, 'cmid of the new module' ),
+                'message' => new external_value(PARAM_TEXT, 'if the execution was successful'),
+                'id' => new external_value(PARAM_TEXT, 'cmid of the new module'),
             )
         );
     }
 
 
 
-     /**
+    /**
      * Defines the necessary method parameters.
      * @return external_function_parameters
      */
-    public static function local_sync_service_assignment_save_attachment_parameters() {
+    public static function local_sync_service_assignment_save_attachment_parameters()
+    {
         return new external_function_parameters(
             array(
-                'cmid' => new external_value( PARAM_TEXT, 'id of module' ),
-                'itemid' => new external_value( PARAM_TEXT, 'id of draft area where file uploaded' ),
-                'filename' => new external_value( PARAM_TEXT, 'filename' )
+                'cmid' => new external_value(PARAM_TEXT, 'id of module'),
+                'itemid' => new external_value(PARAM_TEXT, 'id of draft area where file uploaded'),
+                'filename' => new external_value(PARAM_TEXT, 'filename')
             )
         );
     }
@@ -1523,8 +1676,9 @@ class local_sync_service_external extends external_api {
      * @param $itemid File to publish.
      * @return $update Message: Successful and $cmid of the new Module.
      */
-    public static function local_sync_service_assignment_save_attachment($cmid, $itemid, $filename) {
-        global $DB, $CFG,$USER;
+    public static function local_sync_service_assignment_save_attachment($cmid, $itemid, $filename)
+    {
+        global $DB, $CFG, $USER;
 
         require_once($CFG->dirroot . '/mod/' . '/assign' . '/lib.php');
         require_once($CFG->dirroot . '/mod/' . '/assign' . '/locallib.php');
@@ -1557,13 +1711,13 @@ class local_sync_service_external extends external_api {
 
         $files = $fs->get_area_files($context->id, 'mod_assign', 'intro'/*ASSIGN_INTROATTACHMENT_FILEAREA*/, 0);
         foreach ($files as $file) {
-            if  ($file->get_filename() == $filename /*and $file->get_itemid() == $itemid*/) {
+            if ($file->get_filename() == $filename /*and $file->get_itemid() == $itemid*/) {
                 $file->delete();
             }
         }
 
         $files = $fs->get_area_files($usercontext->id, 'user', 'draft', $itemid);
-        
+
         foreach ($files as $file) {
 
             $fileinfo = [
@@ -1575,7 +1729,7 @@ class local_sync_service_external extends external_api {
                 'filename'  =>  $file->get_filename(),   // Any filename.
             ];
 
-            if  ($file->get_filename() == $filename /*and $file->get_itemid() == $itemid*/ ) {
+            if ($file->get_filename() == $filename /*and $file->get_itemid() == $itemid*/) {
                 $fs->create_file_from_storedfile($fileinfo, $file);
 
                 $url = moodle_url::make_draftfile_url(
@@ -1587,7 +1741,6 @@ class local_sync_service_external extends external_api {
 
                 break;
             }
-
         }
 
         $instance->coursemodule = $cmid;
@@ -1606,11 +1759,12 @@ class local_sync_service_external extends external_api {
      * Obtains the Parameter which will be returned.
      * @return external_description
      */
-    public static function local_sync_service_assignment_save_attachment_returns() {
+    public static function local_sync_service_assignment_save_attachment_returns()
+    {
         return new external_single_structure(
             array(
-                'message' => new external_value( PARAM_TEXT, 'if the execution was successful' ),
-                'id' => new external_value( PARAM_TEXT, 'cmid of the new module' ),
+                'message' => new external_value(PARAM_TEXT, 'if the execution was successful'),
+                'id' => new external_value(PARAM_TEXT, 'cmid of the new module'),
                 //'url' => new external_value( PARAM_TEXT, 'url of the uploaded itemid' ),
             )
         );
@@ -1621,12 +1775,13 @@ class local_sync_service_external extends external_api {
      * Defines the necessary method parameters.
      * @return external_function_parameters
      */
-    public static function local_sync_service_label_save_attachment_parameters() {
+    public static function local_sync_service_label_save_attachment_parameters()
+    {
         return new external_function_parameters(
             array(
-                'cmid' => new external_value( PARAM_TEXT, 'id of module' ),
-                'itemid' => new external_value( PARAM_TEXT, 'id of draft area where file uploaded' ),
-                'filename' => new external_value( PARAM_TEXT, 'filename' )
+                'cmid' => new external_value(PARAM_TEXT, 'id of module'),
+                'itemid' => new external_value(PARAM_TEXT, 'id of draft area where file uploaded'),
+                'filename' => new external_value(PARAM_TEXT, 'filename')
             )
         );
     }
@@ -1637,8 +1792,9 @@ class local_sync_service_external extends external_api {
      * @param $itemid File to publish.
      * @return $update Message: Successful and $cmid of the new Module.
      */
-    public static function local_sync_service_label_save_attachment($cmid, $itemid, $filename) {
-        global $DB, $CFG,$USER;
+    public static function local_sync_service_label_save_attachment($cmid, $itemid, $filename)
+    {
+        global $DB, $CFG, $USER;
 
         require_once($CFG->dirroot . '/mod/' . '/label' . '/lib.php');
 
@@ -1667,10 +1823,9 @@ class local_sync_service_external extends external_api {
         $usercontext = \context_user::instance($USER->id);
         $files = $fs->get_area_files($context->id, 'mod_label', 'intro', 0);
         foreach ($files as $file) {
-            if  ($file->get_filename() == $filename) {
+            if ($file->get_filename() == $filename) {
                 $file->delete();
             }
-
         }
 
         $files = $fs->get_area_files($usercontext->id, 'user', 'draft', $itemid);
@@ -1684,7 +1839,7 @@ class local_sync_service_external extends external_api {
                 'filename'  =>  $file->get_filename(),   // Any filename.
             ];
 
-            if  ($file->get_filename() == $filename ) {
+            if ($file->get_filename() == $filename) {
                 // debug("create store file for $filename ($itemid)\n");
                 $fs->create_file_from_storedfile($fileinfo, $file);
 
@@ -1697,7 +1852,6 @@ class local_sync_service_external extends external_api {
                 // debug("Draft URL: $url\n");
                 break;
             }
-
         }
 
         $instance->coursemodule = $cmid;
@@ -1717,25 +1871,27 @@ class local_sync_service_external extends external_api {
      * Obtains the Parameter which will be returned.
      * @return external_description
      */
-    public static function local_sync_service_label_save_attachment_returns() {
+    public static function local_sync_service_label_save_attachment_returns()
+    {
         return new external_single_structure(
             array(
-                'message' => new external_value( PARAM_TEXT, 'if the execution was successful' ),
-                'id' => new external_value( PARAM_TEXT, 'cmid of the new module' ),
+                'message' => new external_value(PARAM_TEXT, 'if the execution was successful'),
+                'id' => new external_value(PARAM_TEXT, 'cmid of the new module'),
             )
         );
     }
 
-         /**
+    /**
      * Defines the necessary method parameters.
      * @return external_function_parameters
      */
-    public static function local_sync_service_page_save_attachment_parameters() {
+    public static function local_sync_service_page_save_attachment_parameters()
+    {
         return new external_function_parameters(
             array(
-                'cmid' => new external_value( PARAM_TEXT, 'id of module' ),
-                'itemid' => new external_value( PARAM_TEXT, 'id of draft area where file uploaded' ),
-                'filename' => new external_value( PARAM_TEXT, 'filename' )
+                'cmid' => new external_value(PARAM_TEXT, 'id of module'),
+                'itemid' => new external_value(PARAM_TEXT, 'id of draft area where file uploaded'),
+                'filename' => new external_value(PARAM_TEXT, 'filename')
             )
         );
     }
@@ -1746,8 +1902,9 @@ class local_sync_service_external extends external_api {
      * @param $itemid File to publish.
      * @return $update Message: Successful and $cmid of the new Module.
      */
-    public static function local_sync_service_page_save_attachment($cmid, $itemid, $filename) {
-        global $DB, $CFG,$USER;
+    public static function local_sync_service_page_save_attachment($cmid, $itemid, $filename)
+    {
+        global $DB, $CFG, $USER;
 
         require_once($CFG->dirroot . '/mod/' . '/page' . '/lib.php');
 
@@ -1774,7 +1931,7 @@ class local_sync_service_external extends external_api {
         $usercontext = \context_user::instance($USER->id);
         $files = $fs->get_area_files($context->id, 'mod_page', 'content', 0);
         foreach ($files as $file) {
-            if  ($file->get_filename() == $filename) {
+            if ($file->get_filename() == $filename) {
                 $file->delete();
             }
         }
@@ -1791,7 +1948,7 @@ class local_sync_service_external extends external_api {
                 'filename'  =>  $file->get_filename(),   // Any filename.
             ];
 
-            if  ($file->get_filename() == $filename ) {
+            if ($file->get_filename() == $filename) {
                 $fs->create_file_from_storedfile($fileinfo, $file);
                 break;
             }
@@ -1808,25 +1965,27 @@ class local_sync_service_external extends external_api {
      * Obtains the Parameter which will be returned.
      * @return external_description
      */
-    public static function local_sync_service_page_save_attachment_returns() {
+    public static function local_sync_service_page_save_attachment_returns()
+    {
         return new external_single_structure(
             array(
-                'message' => new external_value( PARAM_TEXT, 'if the execution was successful' ),
-                'id' => new external_value( PARAM_TEXT, 'cmid of the new module' ),
+                'message' => new external_value(PARAM_TEXT, 'if the execution was successful'),
+                'id' => new external_value(PARAM_TEXT, 'cmid of the new module'),
             )
         );
     }
 
-         /**
+    /**
      * Defines the necessary method parameters.
      * @return external_function_parameters
      */
-    public static function local_sync_service_lesson_save_attachment_parameters() {
+    public static function local_sync_service_lesson_save_attachment_parameters()
+    {
         return new external_function_parameters(
             array(
-                'cmid' => new external_value( PARAM_TEXT, 'id of module' ),
-                'itemid' => new external_value( PARAM_TEXT, 'id of draft area where file uploaded' ),
-                'filename' => new external_value( PARAM_TEXT, 'filename' )
+                'cmid' => new external_value(PARAM_TEXT, 'id of module'),
+                'itemid' => new external_value(PARAM_TEXT, 'id of draft area where file uploaded'),
+                'filename' => new external_value(PARAM_TEXT, 'filename')
             )
         );
     }
@@ -1838,8 +1997,9 @@ class local_sync_service_external extends external_api {
      * @param $itemid File to publish.
      * @return $update Message: Successful and $cmid of the new Module.
      */
-    public static function local_sync_service_lesson_save_attachment($cmid, $itemid, $filename) {
-        global $DB, $CFG,$USER;
+    public static function local_sync_service_lesson_save_attachment($cmid, $itemid, $filename)
+    {
+        global $DB, $CFG, $USER;
 
         require_once($CFG->dirroot . '/mod/' . '/lesson' . '/lib.php');
 
@@ -1866,10 +2026,9 @@ class local_sync_service_external extends external_api {
         $usercontext = \context_user::instance($USER->id);
         $files = $fs->get_area_files($context->id, 'mod_lesson', 'intro', 0);
         foreach ($files as $file) {
-            if  ($file->get_filename() == $filename) {
+            if ($file->get_filename() == $filename) {
                 $file->delete();
             }
-
         }
 
         $files = $fs->get_area_files($usercontext->id, 'user', 'draft', $itemid);
@@ -1883,7 +2042,7 @@ class local_sync_service_external extends external_api {
                 'filename'  =>  $file->get_filename(),   // Any filename.
             ];
 
-            if  ($file->get_filename() == $filename ) {
+            if ($file->get_filename() == $filename) {
                 $fs->create_file_from_storedfile($fileinfo, $file);
 
                 $url = moodle_url::make_draftfile_url(
@@ -1894,13 +2053,12 @@ class local_sync_service_external extends external_api {
                 );
                 break;
             }
-
         }
 
         $instance->coursemodule = $cmid;
         $instance->instance = $cm->instance;
-        $instance->id = $cm->instance;        
-        $instance->id = lesson_update_instance($instance,null);
+        $instance->id = $cm->instance;
+        $instance->id = lesson_update_instance($instance, null);
         $update = [
             'message' => 'Successful',
             'id' => $cmid,
@@ -1912,11 +2070,12 @@ class local_sync_service_external extends external_api {
      * Obtains the Parameter which will be returned.
      * @return external_description
      */
-    public static function local_sync_service_lesson_save_attachment_returns() {
+    public static function local_sync_service_lesson_save_attachment_returns()
+    {
         return new external_single_structure(
             array(
-                'message' => new external_value( PARAM_TEXT, 'if the execution was successful' ),
-                'id' => new external_value( PARAM_TEXT, 'cmid of the new module' ),
+                'message' => new external_value(PARAM_TEXT, 'if the execution was successful'),
+                'id' => new external_value(PARAM_TEXT, 'cmid of the new module'),
             )
         );
     }
@@ -1927,13 +2086,14 @@ class local_sync_service_external extends external_api {
      * Defines the necessary method parameters.
      * @return external_function_parameters
      */
-    public static function local_sync_service_lessonpage_save_attachment_parameters() {
+    public static function local_sync_service_lessonpage_save_attachment_parameters()
+    {
         return new external_function_parameters(
             array(
-                'cmid' => new external_value( PARAM_TEXT, 'id of module' ),
-                'itemid' => new external_value( PARAM_TEXT, 'id of draft area where file uploaded' ),
-                'pageid' => new external_value( PARAM_TEXT, 'pageid of lesson content page' ),
-                'filename' => new external_value( PARAM_TEXT, 'filename' )
+                'cmid' => new external_value(PARAM_TEXT, 'id of module'),
+                'itemid' => new external_value(PARAM_TEXT, 'id of draft area where file uploaded'),
+                'pageid' => new external_value(PARAM_TEXT, 'pageid of lesson content page'),
+                'filename' => new external_value(PARAM_TEXT, 'filename')
             )
         );
     }
@@ -1945,8 +2105,9 @@ class local_sync_service_external extends external_api {
      * @param $itemid File to publish.
      * @return $update Message: Successful and $cmid of the new Module.
      */
-    public static function local_sync_service_lessonpage_save_attachment($cmid, $itemid, $pageid, $filename) {
-        global $DB, $CFG,$USER;
+    public static function local_sync_service_lessonpage_save_attachment($cmid, $itemid, $pageid, $filename)
+    {
+        global $DB, $CFG, $USER;
 
         require_once($CFG->dirroot . '/mod/' . '/lesson' . '/lib.php');
 
@@ -1974,14 +2135,14 @@ class local_sync_service_external extends external_api {
         $usercontext = \context_user::instance($USER->id);
         $files = $fs->get_area_files($context->id, 'mod_lesson', 'page_contents', $pageid);
         foreach ($files as $file) {
-            if  ($file->get_filename() == $filename) {
+            if ($file->get_filename() == $filename) {
                 $file->delete();
             }
         }
 
         $files = $fs->get_area_files($usercontext->id, 'user', 'draft', $itemid);
         foreach ($files as $file) {
-        
+
             $fileinfo = [
                 'contextid' =>  $context->id,   // ID of the context.
                 'component' => 'mod_lesson', // Your component name.
@@ -1991,7 +2152,7 @@ class local_sync_service_external extends external_api {
                 'filename'  =>  $file->get_filename(),   // Any filename.
             ];
 
-            if  ($file->get_filename() == $filename ) {
+            if ($file->get_filename() == $filename) {
                 $fs->create_file_from_storedfile($fileinfo, $file);
 
                 $url = moodle_url::make_draftfile_url(
@@ -2002,13 +2163,12 @@ class local_sync_service_external extends external_api {
                 );
                 break;
             }
-
         }
 
         $instance->coursemodule = $cmid;
         $instance->instance = $cm->instance;
-        $instance->id = $cm->instance;        
-        $instance->id = lesson_update_instance($instance,null);
+        $instance->id = $cm->instance;
+        $instance->id = lesson_update_instance($instance, null);
 
         $update = [
             'message' => 'Successful',
@@ -2021,13 +2181,13 @@ class local_sync_service_external extends external_api {
      * Obtains the Parameter which will be returned.
      * @return external_description
      */
-    public static function local_sync_service_lessonpage_save_attachment_returns() {
+    public static function local_sync_service_lessonpage_save_attachment_returns()
+    {
         return new external_single_structure(
             array(
-                'message' => new external_value( PARAM_TEXT, 'if the execution was successful' ),
-                'id' => new external_value( PARAM_TEXT, 'cmid of the new module' ),
+                'message' => new external_value(PARAM_TEXT, 'if the execution was successful'),
+                'id' => new external_value(PARAM_TEXT, 'cmid of the new module'),
             )
         );
     }
 }
-

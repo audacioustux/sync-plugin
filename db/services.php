@@ -42,6 +42,15 @@ $functions = array(
         'ajax' => true,
         'capabilities' => 'mod/url:addinstance',
     ),
+    'local_course_add_new_course_module_label' => array(
+        'classname' => 'local_sync_service_external',
+        'methodname' => 'local_sync_service_add_new_course_module_label',
+        'classpath' => 'local/sync_service/externallib.php',
+        'description' => 'Add course module Label',
+        'type' => 'write',
+        'ajax' => true,
+        'capabilities' => 'mod/label:addinstance',
+    ),
     'local_course_add_new_course_module_resource' => array(
         'classname' => 'local_sync_service_external',
         'methodname' => 'local_sync_service_add_new_course_module_resource',
@@ -131,7 +140,7 @@ $functions = array(
         'type' => 'write',
         'ajax' => true,
         'capabilities' => 'mod/label:addinstance',
-    ),    
+    ),
     'local_course_update_course_module_page' => array(
         'classname' => 'local_sync_service_external',
         'methodname' => 'local_sync_service_update_course_module_page',
