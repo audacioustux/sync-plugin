@@ -223,6 +223,72 @@ class local_sync_service_external extends external_api
         );
     }
 
+    // /**
+    //  * Defines the necessary method parameters.
+    //  * @return external_function_parameters
+    //  */
+    // public static function local_sync_service_add_new_course_module_subsection_parameters()
+    // {
+    //     return new external_function_parameters(
+    //         array(
+    //             'courseid' => new external_value(PARAM_TEXT, 'id of course'),
+    //             'sectionid' => new external_value(PARAM_TEXT, 'id of the parent section'),
+    //             'subsectionname' => new external_value(PARAM_TEXT, 'name of section'),
+    //             'subsectionnum' => new external_value(PARAM_TEXT, 'position of the new section '),
+    //         )
+    //     );
+    // }
+
+    // public static function local_sync_service_add_new_course_module_subsection($courseid, $sectionid, $sectionname, $sectionnum)
+    // {
+    //     global $DB, $CFG;
+    //     // Parameter validation.
+    //     $params = self::validate_parameters(
+    //         self::local_sync_service_add_new_course_module_subsection_parameters(),
+    //         array(
+    //             'courseid' => $courseid,
+    //             'sectionid' => $sectionid,
+    //             'subsectionname' => $sectionname,
+    //             'subsectionnum' => $sectionnum,
+    //         )
+    //     );
+
+    //     $transaction = $DB->start_delegated_transaction();
+
+    //     // Ensure the current user has required permission in this course.
+    //     $context = context_course::instance($params['courseid']);
+    //     self::validate_context($context);
+
+    //     // Required permissions.
+    //     require_capability('mod/subsection:addinstance', $context);
+
+    //     $instance = new \stdClass();
+    //     $instance->course = $params['courseid'];
+    //     $instance->id = subsection_add_instance($instance, null);
+
+    //     $modulename = 'subsection';
+
+    //     $cm = new \stdClass();
+    //     $cm->course     = $params['courseid'];
+    //     $cm->module     = $DB->get_field('modules', 'id', array('name' => $modulename));
+    //     $cm->instance   = $instance->id;
+    //     // $cm->section    = $params['subsectionnum'];
+
+    //     $cm->id = add_course_module($cm);
+    //     $cmid = $cm->id;
+
+    //     course_add_cm_to_section($params['courseid'], $cmid, $params['subsectionnum']);
+
+    //     $update = [
+    //         'message' => 'Successful',
+    //         'id' => $cmid,
+    //     ];
+
+    //     $transaction->allow_commit();
+
+    //     return $update;
+    // }
+
     /**
      * Defines the necessary method parameters.
      * @return external_function_parameters
