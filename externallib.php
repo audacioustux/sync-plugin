@@ -223,72 +223,6 @@ class local_sync_service_external extends external_api
         );
     }
 
-    // /**
-    //  * Defines the necessary method parameters.
-    //  * @return external_function_parameters
-    //  */
-    // public static function local_sync_service_add_new_course_module_subsection_parameters()
-    // {
-    //     return new external_function_parameters(
-    //         array(
-    //             'courseid' => new external_value(PARAM_TEXT, 'id of course'),
-    //             'sectionid' => new external_value(PARAM_TEXT, 'id of the parent section'),
-    //             'subsectionname' => new external_value(PARAM_TEXT, 'name of section'),
-    //             'subsectionnum' => new external_value(PARAM_TEXT, 'position of the new section '),
-    //         )
-    //     );
-    // }
-
-    // public static function local_sync_service_add_new_course_module_subsection($courseid, $sectionid, $sectionname, $sectionnum)
-    // {
-    //     global $DB, $CFG;
-    //     // Parameter validation.
-    //     $params = self::validate_parameters(
-    //         self::local_sync_service_add_new_course_module_subsection_parameters(),
-    //         array(
-    //             'courseid' => $courseid,
-    //             'sectionid' => $sectionid,
-    //             'subsectionname' => $sectionname,
-    //             'subsectionnum' => $sectionnum,
-    //         )
-    //     );
-
-    //     $transaction = $DB->start_delegated_transaction();
-
-    //     // Ensure the current user has required permission in this course.
-    //     $context = context_course::instance($params['courseid']);
-    //     self::validate_context($context);
-
-    //     // Required permissions.
-    //     require_capability('mod/subsection:addinstance', $context);
-
-    //     $instance = new \stdClass();
-    //     $instance->course = $params['courseid'];
-    //     $instance->id = subsection_add_instance($instance, null);
-
-    //     $modulename = 'subsection';
-
-    //     $cm = new \stdClass();
-    //     $cm->course     = $params['courseid'];
-    //     $cm->module     = $DB->get_field('modules', 'id', array('name' => $modulename));
-    //     $cm->instance   = $instance->id;
-    //     // $cm->section    = $params['subsectionnum'];
-
-    //     $cm->id = add_course_module($cm);
-    //     $cmid = $cm->id;
-
-    //     course_add_cm_to_section($params['courseid'], $cmid, $params['subsectionnum']);
-
-    //     $update = [
-    //         'message' => 'Successful',
-    //         'id' => $cmid,
-    //     ];
-
-    //     $transaction->allow_commit();
-
-    //     return $update;
-    // }
-
     /**
      * Defines the necessary method parameters.
      * @return external_function_parameters
@@ -823,7 +757,7 @@ class local_sync_service_external extends external_api
         $instance->intro = null;
         $instance->introformat = \FORMAT_HTML;
         $instance->intro = '<p>' . $params['urlname'] . '</p>';
-        $instance->page = array('format' => \FORMAT_MARKDOWN, 'text' => $content, 'itemid' => false);
+        $instance->page = array('format' => \FORMAT_HTML, 'text' => $content, 'itemid' => false);
         $instance->coursemodule = $cmid;
         $instance->id = page_add_instance($instance, $instance);
 
@@ -1361,7 +1295,7 @@ class local_sync_service_external extends external_api
             array(
                 'cmid' => new external_value(PARAM_TEXT, 'id of module'),
                 'content' => new external_value(PARAM_TEXT, 'HTML or Markdown code'),
-                'format' => new external_value(PARAM_TEXT, 'Markdown or HTML', VALUE_DEFAULT, \FORMAT_MARKDOWN),
+                'format' => new external_value(PARAM_TEXT, 'Markdown or HTML', VALUE_DEFAULT, \FORMAT_HTML),
             )
         );
     }
@@ -1521,11 +1455,11 @@ class local_sync_service_external extends external_api
 
         $instance->activityeditor =  [
             'text' => html_entity_decode($activity),
-            'format' =>  \FORMAT_MARKDOWN,
+            'format' =>  \FORMAT_HTML,
         ];
 
-        $instance->introformat = \FORMAT_MARKDOWN;
-        $instance->activityformat = \FORMAT_MARKDOWN;
+        $instance->introformat = \FORMAT_HTML;
+        $instance->activityformat = \FORMAT_HTML;
         $instance->coursemodule = $cmid;
         $instance->instance = $cm->instance;
         $instance->modulename = 'assign';
@@ -1605,7 +1539,7 @@ class local_sync_service_external extends external_api
         require_capability('mod/lesson:addinstance', $context);
 
         $instance->intro = html_entity_decode($desc);
-        $instance->introformat = \FORMAT_MARKDOWN;
+        $instance->introformat = \FORMAT_HTML;
         $instance->coursemodule = $cmid;
         $instance->instance = $cm->instance;
         $instance->modulename = 'lesson';
@@ -1636,10 +1570,6 @@ class local_sync_service_external extends external_api
         );
     }
 
-    /**
-     * Defines the necessary method parameters.
-     * @return external_function_parameters
-     */
     public static function local_sync_service_add_new_course_module_lesson_parameters()
     {
         return new external_function_parameters(
@@ -1673,7 +1603,7 @@ class local_sync_service_external extends external_api
         require_once($CFG->dirroot . '/mod/' . '/lesson' . '/lib.php');
         require_once($CFG->dirroot . '/mod/' . '/lesson' . '/locallib.php');
 
-        debug("local_sync_service_add_new_course_module_lesson\n");
+        debug("local_sync_service_add_new_course_module_lesson");
 
         // Parameter validation.
         $params = self::validate_parameters(
@@ -1701,7 +1631,7 @@ class local_sync_service_external extends external_api
         $instance->name = $params['urlname'];
         $instance->introformat = \FORMAT_HTML;
         $instance->completionexpected = null; //todo
-        $instance->intro = '<p>' . $params['content'] . '</p>';
+        $instance->intro = '<p>' . $params['urlname'] . '</p>';
         $instance->visible = 1;
         $instance->id = lesson_add_instance($instance, null);
 
@@ -1721,9 +1651,9 @@ class local_sync_service_external extends external_api
 
         $cm->id = add_course_module($cm);
         $cmid = $cm->id;
-        debug("course module added $cmid\n");
+        debug("course module added $cmid");
 
-        course_add_cm_to_section($params['courseid'], $cmid, $params['sectionnum'], $params['beforemod']);
+        $secsectionid = course_add_cm_to_section($params['courseid'], $cmid, $params['sectionnum'], $params['beforemod']);
 
         debug("prepare add to section done $sectionid ");
 
@@ -1748,7 +1678,6 @@ class local_sync_service_external extends external_api
         );
     }
 
-
     /**
      * Defines the necessary method parameters.
      * @return external_function_parameters
@@ -1762,7 +1691,6 @@ class local_sync_service_external extends external_api
                 'pageid' => new external_value(PARAM_INT, 'pageid of lesson content'),
                 'title' => new external_value(PARAM_TEXT, 'title of lesson content page', VALUE_OPTIONAL),
                 'content' => new external_value(PARAM_TEXT, 'HTML or Markdown code'),
-
             )
         );
     }
