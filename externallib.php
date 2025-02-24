@@ -1635,6 +1635,8 @@ class local_sync_service_external extends external_api
         $instance->completionexpected = null; //todo
         $instance->intro = '<p>' . $params['urlname'] . '</p>';
         $instance->visible = 1;
+
+        debug("instance prepared");
         $instance->id = lesson_add_instance($instance, null);
 
         debug("added lesson $instance->id");
