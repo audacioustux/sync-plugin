@@ -1623,6 +1623,8 @@ class local_sync_service_external extends external_api
         $context = context_course::instance($params['courseid']);
         self::validate_context($context);
 
+        debug("context validated");
+
         // Required permissions.
         require_capability('mod/lesson:addinstance', $context);
 
