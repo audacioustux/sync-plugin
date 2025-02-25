@@ -1623,6 +1623,8 @@ class local_sync_service_external extends external_api
             )
         );
 
+        debug("parameters validated\n");
+
         // Ensure the current user has required permission in this course.
         $context = context_course::instance($params['courseid']);
         self::validate_context($context);
@@ -1634,10 +1636,16 @@ class local_sync_service_external extends external_api
         $transaction = $DB->start_delegated_transaction();
 
         $instance = new \stdClass();
+        // array('modulename', 'course', 'section', 'visible')
         $instance->modulename = 'lesson';
         $instance->course = $params['courseid'];
         $instance->section = $params['sectionnum'];
-        $instance->visible = true;
+        $instance->visible = $params['visible'];
+
+        // debug instance object
+        debug(
+            "instance object: " . print_r($instance, true)
+        );
 
         $cm = create_module($instance);
 
