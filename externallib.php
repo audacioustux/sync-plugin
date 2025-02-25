@@ -1581,8 +1581,7 @@ class local_sync_service_external extends external_api
                 'courseid' => new external_value(PARAM_TEXT, 'id of course'),
                 'sectionnum' => new external_value(PARAM_TEXT, 'relative number of the section'),
                 'name' => new external_value(PARAM_TEXT, 'displayed mod name'),
-                'content' => new external_value(PARAM_TEXT, 'Content to insert'),
-                'visible' => new external_value(PARAM_TEXT, 'defines the mod. visibility'),
+                'intro' => new external_value(PARAM_TEXT, 'Content to insert'),
                 'beforemod' => new external_value(PARAM_TEXT, 'mod to set before', VALUE_DEFAULT, null),
             )
         );
@@ -1600,7 +1599,7 @@ class local_sync_service_external extends external_api
      * @param $beforemod Optional parameter, a Module where the new Module should be placed before.
      * @return $update Message: Successful and $cmid of the new Module.
      */
-    public static function local_sync_service_add_new_course_module_lesson($courseid, $sectionnum, $name, $content, $visible, $beforemod = null)
+    public static function local_sync_service_add_new_course_module_lesson($courseid, $sectionnum, $name, $content, $visible, $visibleoncoursepage, $beforemod = null)
     {
         global $DB, $CFG;
         require_once($CFG->dirroot . '/mod/' . '/lesson' . '/lib.php');
@@ -1615,8 +1614,7 @@ class local_sync_service_external extends external_api
                 'courseid' => $courseid,
                 'sectionnum' => $sectionnum,
                 'name' => $name,
-                'content' => $content,
-                'visible' => $visible,
+                'intro' => $content,
                 'beforemod' => $beforemod,
             )
         );
@@ -1638,10 +1636,12 @@ class local_sync_service_external extends external_api
         $instance->modulename = 'lesson';
         $instance->course = $params['courseid'];
         $instance->section = $params['sectionnum'];
-        $instance->visible = $params['visible'];
+        $instance->visible = 1;
+        $instance->visibleoncoursepage = 1;
+        $instance->showdescription = 1;
         $instance->name = $params['name'];
         $instance->introeditor = [
-            'text' => html_entity_decode($params['content']),
+            'text' => html_entity_decode($params['intro']),
             'format' => \FORMAT_HTML,
         ];
         $instance->beforemod = $params['beforemod'];
