@@ -1574,7 +1574,7 @@ class local_sync_service_external extends external_api
      * Defines the necessary method parameters.
      * @return external_function_parameters
      */
-    public static function local_sync_service_new_course_module_lesson_parameters()
+    public static function local_sync_service_add_new_course_module_lesson_parameters()
     {
         return new external_function_parameters(
             array(
@@ -1601,17 +1601,17 @@ class local_sync_service_external extends external_api
      * @param $beforemod Optional parameter, a Module where the new Module should be placed before.
      * @return $update Message: Successful and $cmid of the new Module.
      */
-    public static function local_sync_service_new_course_module_lesson($courseid, $sectionnum, $urlname, $content, $time = null, $visible, $beforemod = null)
+    public static function local_sync_service_add_new_course_module_lesson($courseid, $sectionnum, $urlname, $content, $time = null, $visible, $beforemod = null)
     {
         global $DB, $CFG;
         require_once($CFG->dirroot . '/mod/' . '/lesson' . '/lib.php');
         require_once($CFG->dirroot . '/mod/' . '/lesson' . '/locallib.php');
 
-        debug("local_sync_service_new_course_module_lesson");
+        debug("local_sync_service_new_course_module_lesson\n");
 
         // Parameter validation.
         $params = self::validate_parameters(
-            self::local_sync_service_new_course_module_lesson_parameters(),
+            self::local_sync_service_add_new_course_module_lesson_parameters(),
             array(
                 'courseid' => $courseid,
                 'sectionnum' => $sectionnum,
@@ -1656,7 +1656,7 @@ class local_sync_service_external extends external_api
      * Obtains the Parameter which will be returned.
      * @return external_description
      */
-    public static function local_sync_service_new_course_module_lesson_returns()
+    public static function local_sync_service_add_new_course_module_lesson_returns()
     {
         return new external_single_structure(
             array(
