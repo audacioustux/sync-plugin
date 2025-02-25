@@ -32,7 +32,6 @@ function debug($data)
     if (is_array($output))
         $output = implode(',', $output);
 
-    #echo "<script>console.log('Debug Objects: " . $output . "' );</script>";
     echo "Debug Objects: " . $output . "";
 }
 
@@ -712,8 +711,6 @@ class local_sync_service_external extends external_api
         global $DB, $CFG;
         require_once($CFG->dirroot . '/mod/' . '/page' . '/lib.php');
 
-        debug("local_sync_service_add_new_course_module_page");
-
 
         // Parameter validation.
         $params = self::validate_parameters(
@@ -823,8 +820,6 @@ class local_sync_service_external extends external_api
         require_once($CFG->dirroot . '/mod/' . '/book' . '/lib.php');
         require_once($CFG->dirroot . '/mod/' . '/book' . '/locallib.php');
 
-        debug("local_sync_service_add_new_course_module_book");
-
         // Parameter validation.
         $params = self::validate_parameters(
             self::local_sync_service_add_new_course_module_book_parameters(),
@@ -856,8 +851,6 @@ class local_sync_service_external extends external_api
         $instance->visible = 1;
         $instance->id = book_add_instance($instance, null);
 
-        debug("added book $instance->id");
-
         $modulename = 'book';
         $cm = new \stdClass();
         $cm->course     = $params['courseid'];
@@ -872,11 +865,9 @@ class local_sync_service_external extends external_api
 
         $cm->id = add_course_module($cm);
         $cmid = $cm->id;
-        debug("course module added $cmid\n");
 
         $secsectionid = course_add_cm_to_section($params['courseid'], $cmid, $params['sectionnum'], $params['beforemod']);
 
-        debug("prepare add to section done $sectionid ");
 
         $update = [
             'message' => 'Successful',
@@ -932,7 +923,6 @@ class local_sync_service_external extends external_api
         require_once($CFG->dirroot . '/mod/' . '/book' . '/locallib.php');
         require_once($CFG->dirroot . '/mod/' . '/book/tool/importhtml' . '/locallib.php');
 
-        debug("local_sync_service_import_html_in_book");
         // Parameter validation.
         $params = self::validate_parameters(
             self::local_sync_service_import_html_in_book_parameters(),
@@ -952,17 +942,13 @@ class local_sync_service_external extends external_api
         require_capability('booktool/importhtml:import', $context);
 
         $fs = get_file_storage();
-        debug("get info about itemid $itemid");
         if (!$files = $fs->get_area_files(context_user::instance($USER->id)->id, 'user', 'draft', $itemid, 'id', false)) {
-            debug("no itemid $itemid found");
             $update = ['message' => 'Itemid not found', 'rv' => -1];
         } else {
             $file = reset($files);
             if ($file->get_mimetype() != 'application/zip') {
-                debug("$itemid is not a zip content");
                 $update = ['message' => 'Not a zip content', 'rv' => -1];
             } else {
-                debug("all clear, let's go");
                 toolbook_importhtml_import_chapters($file, $type, $book, $context, false);
                 $update = ['message' => 'Successful', 'rv' => 0];
             }
@@ -1012,7 +998,6 @@ class local_sync_service_external extends external_api
         require_once($CFG->dirroot . '/mod/' . '/book' . '/lib.php');
         require_once($CFG->dirroot . '/mod/' . '/book' . '/locallib.php');
 
-        debug("local_course_delete_all_chapters_from_book\n");
         // Parameter validation.
         $params = self::validate_parameters(
             self::local_sync_service_delete_all_chapters_from_book_parameters(),
@@ -1023,7 +1008,6 @@ class local_sync_service_external extends external_api
 
         // Ensure the current user has required permission in this course.
         $cm = get_coursemodule_from_id('book', $cmid, 0, false, MUST_EXIST);
-        debug("module id  $cm->id\n");
         $context = context_module::instance($cm->id);
         self::validate_context($context);
 
@@ -1031,11 +1015,9 @@ class local_sync_service_external extends external_api
 
         $fs = get_file_storage();
         $book = $DB->get_record('book', array('id' => $cm->instance), '*', MUST_EXIST);
-        debug("book id $book->id\n");
 
         $chapter = $DB->get_records('book_chapters', array('bookid' => $book->id), 'pagenum', 'id, pagenum,subchapter, title, content, contentformat, hidden');
         foreach ($chapter as $id => $ch) {
-            debug("in chapter $ch->id\n");
 
 
             $subchaptercount = 0;
@@ -1048,7 +1030,6 @@ class local_sync_service_external extends external_api
                 ], 'pagenum');
 
                 foreach ($chapters as $ch) {
-                    debug("get chapter $ch->id\n");
                     if (!$ch->subchapter) {
                         // This is a new chapter. Any subsequent subchapters will be part of a different chapter.
                         break;
@@ -1063,11 +1044,9 @@ class local_sync_service_external extends external_api
                 }
                 $chapters->close();
             } else
-                debug("no subcharters to delete\n");
 
-            // Now delete the actual chapter.
-            debug("delete chapter $ch->id\n");
-            core_tag_tag::remove_all_item_tags('mod_book', 'book_chapters', $ch->id);
+                // Now delete the actual chapter.
+                core_tag_tag::remove_all_item_tags('mod_book', 'book_chapters', $ch->id);
             $fs->delete_area_files($context->id, 'mod_book', 'chapter', $ch->id);
             $DB->delete_records('book_chapters', ['id' => $ch->id]);
         }
@@ -1081,7 +1060,6 @@ class local_sync_service_external extends external_api
         // Bump the book revision.
         $DB->set_field('book', 'revision', $book->revision + 1, ['id' => $book->id]);
 
-        debug("all clear, let's go");
         $update = ['message' => 'Successful', 'rv' => 0];
 
         return $update;
@@ -1133,7 +1111,6 @@ class local_sync_service_external extends external_api
         require_once($CFG->dirroot . '/course/' . '/modlib.php');
         require_once($CFG->dirroot . '/availability/' . '/condition' . '/date' . '/classes' . '/condition.php');
 
-        debug("local_sync_service_update_course_module_resource\n");
         // Parameter validation.
         $params = self::validate_parameters(
             self::local_sync_service_update_course_module_resource_parameters(),
@@ -1145,7 +1122,6 @@ class local_sync_service_external extends external_api
         );
 
         $cm = get_coursemodule_from_id('resource', $cmid, 0, false, MUST_EXIST);
-        debug("module instance id  $cm->instance\n");
 
         // Ensure the current user has required permission in this course.
         $context = context_course::instance($cm->course);
@@ -1225,7 +1201,6 @@ class local_sync_service_external extends external_api
         require_once($CFG->dirroot . '/mod/' . '/label' . '/lib.php');
         require_once($CFG->dirroot . '/course/' . '/modlib.php');
 
-        debug("local_sync_service_update_course_module_label\n");
         // Parameter validation.
         $params = self::validate_parameters(
             self::local_sync_service_update_course_module_label_parameters(),
@@ -1314,7 +1289,6 @@ class local_sync_service_external extends external_api
         require_once($CFG->dirroot . '/mod/' . '/page' . '/lib.php');
         require_once($CFG->dirroot . '/course/' . '/modlib.php');
 
-        //debug("local_sync_service_update_course_module_page\n");
         // Parameter validation.
         $params = self::validate_parameters(
             self::local_sync_service_update_course_module_page_parameters(),
@@ -1412,7 +1386,6 @@ class local_sync_service_external extends external_api
         require_once($CFG->dirroot . '/mod/' . '/assign' . '/locallib.php');
         $warnings = array();
 
-        //debug("local_sync_service_update_course_module_assignment\n");
 
         $params = self::validate_parameters(self::local_sync_service_update_course_module_assignment_parameters(), array('assignments' => $assignments));
 
@@ -1420,13 +1393,11 @@ class local_sync_service_external extends external_api
             try {
                 $cmid = $ass['cmid'];
                 $desc = $ass['desc'];
-                //debug(" cmid=$cmid , desc=$desc\n");
 
                 if (array_key_exists('activity', $ass)) {
                     $activity = $ass['activity'];
                 }
             } catch (Exception $e) {
-                debug(" exception\n");
                 $warning = array();
                 $warning['item'] = 'assignments';
                 $warning['itemid'] = $ass['cmid'];
@@ -1516,7 +1487,6 @@ class local_sync_service_external extends external_api
     public static function local_sync_service_update_course_module_lesson($cmid, $desc)
     {
         global $DB, $CFG;
-        //debug("local_sync_service_update_course_module_lesson");
 
         require_once($CFG->dirroot . '/mod/' . '/lesson' . '/lib.php');
         require_once($CFG->dirroot . '/mod/' . '/lesson' . '/locallib.php');
@@ -1605,8 +1575,6 @@ class local_sync_service_external extends external_api
         require_once($CFG->dirroot . '/mod/' . '/lesson' . '/lib.php');
         require_once($CFG->dirroot . '/mod/' . '/lesson' . '/locallib.php');
 
-        debug("local_sync_service_new_course_module_lesson\n");
-
         // Parameter validation.
         $params = self::validate_parameters(
             self::local_sync_service_add_new_course_module_lesson_parameters(),
@@ -1618,8 +1586,6 @@ class local_sync_service_external extends external_api
                 'beforemod' => $beforemod,
             )
         );
-
-        debug("parameters validated\n");
 
         // Ensure the current user has required permission in this course.
         $context = context_course::instance($params['courseid']);
@@ -1645,11 +1611,6 @@ class local_sync_service_external extends external_api
             'format' => \FORMAT_HTML,
         ];
         $instance->beforemod = $params['beforemod'];
-
-        // debug instance object
-        debug(
-            "instance object: " . print_r($instance, true)
-        );
 
         $cm = create_module($instance);
 
@@ -1708,8 +1669,6 @@ class local_sync_service_external extends external_api
         require_once($CFG->dirroot . '/mod/' . '/lesson' . '/lib.php');
         require_once($CFG->dirroot . '/mod/' . '/lesson' . '/locallib.php');
         $warnings = array();
-
-        debug("local_sync_service_update_course_module_lesson_contentpage\n");
 
         // Parameter validation.
         $params = self::validate_parameters(
@@ -1788,8 +1747,6 @@ class local_sync_service_external extends external_api
 
         require_once($CFG->dirroot . '/mod/' . '/assign' . '/lib.php');
         require_once($CFG->dirroot . '/mod/' . '/assign' . '/locallib.php');
-
-        //debug("local_sync_service_assignment_save_attachment\n");
 
         // Parameter validation.
         $params = self::validate_parameters(
@@ -1914,8 +1871,6 @@ class local_sync_service_external extends external_api
             )
         );
 
-        //debug(" cmid=$cmid , itemid=$itemid, filename=$filename\n");
-
         $cm = get_coursemodule_from_id('label', $cmid, 0, false, MUST_EXIST);
         $instance = $DB->get_record('label', array('id' => $cm->instance), '*', MUST_EXIST);
         $context = context_module::instance($cmid);
@@ -1946,7 +1901,6 @@ class local_sync_service_external extends external_api
             ];
 
             if ($file->get_filename() == $filename) {
-                // debug("create store file for $filename ($itemid)\n");
                 $fs->create_file_from_storedfile($fileinfo, $file);
 
                 $url = moodle_url::make_draftfile_url(
@@ -1955,7 +1909,6 @@ class local_sync_service_external extends external_api
                     $file->get_filename(),
                     false
                 );
-                // debug("Draft URL: $url\n");
                 break;
             }
         }
