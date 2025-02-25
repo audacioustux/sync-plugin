@@ -1570,7 +1570,11 @@ class local_sync_service_external extends external_api
         );
     }
 
-    public static function local_sync_service_add_new_course_module_lesson_parameters()
+    /**
+     * Defines the necessary method parameters.
+     * @return external_function_parameters
+     */
+    public static function local_sync_service_new_course_module_lesson_parameters()
     {
         return new external_function_parameters(
             array(
@@ -1597,17 +1601,17 @@ class local_sync_service_external extends external_api
      * @param $beforemod Optional parameter, a Module where the new Module should be placed before.
      * @return $update Message: Successful and $cmid of the new Module.
      */
-    public static function local_sync_service_add_new_course_module_lesson($courseid, $sectionnum, $urlname, $content, $time = null, $visible, $beforemod = null)
+    public static function local_sync_service_new_course_module_lesson($courseid, $sectionnum, $urlname, $content, $time = null, $visible, $beforemod = null)
     {
         global $DB, $CFG;
         require_once($CFG->dirroot . '/mod/' . '/lesson' . '/lib.php');
         require_once($CFG->dirroot . '/mod/' . '/lesson' . '/locallib.php');
 
-        debug("local_sync_service_add_new_course_module_lesson");
+        debug("local_sync_service_new_course_module_lesson");
 
         // Parameter validation.
         $params = self::validate_parameters(
-            self::local_sync_service_add_new_course_module_lesson_parameters(),
+            self::local_sync_service_new_course_module_lesson_parameters(),
             array(
                 'courseid' => $courseid,
                 'sectionnum' => $sectionnum,
@@ -1623,48 +1627,28 @@ class local_sync_service_external extends external_api
         $context = context_course::instance($params['courseid']);
         self::validate_context($context);
 
-        debug("context validated");
-
         // Required permissions.
         require_capability('mod/lesson:addinstance', $context);
 
+        // start db transaction
+        $transaction = $DB->start_delegated_transaction();
+
         $instance = new \stdClass();
+        $instance->modulename = 'lesson';
         $instance->course = $params['courseid'];
-        $instance->name = $params['urlname'];
-        $instance->introformat = \FORMAT_HTML;
-        $instance->completionexpected = null; //todo
-        $instance->intro = '<p>' . $params['urlname'] . '</p>';
-        $instance->visible = 1;
+        $instance->section = $params['sectionnum'];
+        $instance->visible = true;
 
-        debug("instance prepared");
-        $instance->id = lesson_add_instance($instance, null);
-
-        debug("added lesson $instance->id");
-
-        $modulename = 'lesson';
-        $cm = new \stdClass();
-        $cm->course     = $params['courseid'];
-        $cm->instance   = $instance->id;
-        $cm->module     = $DB->get_field('modules', 'id', array('name' => $modulename));
-        $cm->section    = $params['sectionnum'];
-        if (!is_null($params['time'])) {
-            $cm->availability = "{\"op\":\"&\",\"c\":[{\"type\":\"date\",\"d\":\">=\",\"t\":" . $params['time'] . "}],\"showc\":[" . $params['visible'] . "]}";
-        } else if ($params['visible'] === 'false') {
-            $cm->visible = 0;
-        }
-
-        $cm->id = add_course_module($cm);
-        $cmid = $cm->id;
-        debug("course module added $cmid");
-
-        $secsectionid = course_add_cm_to_section($params['courseid'], $cmid, $params['sectionnum'], $params['beforemod']);
-
-        debug("prepare add to section done $sectionid ");
+        $cm = create_module($instance);
 
         $update = [
             'message' => 'Successful',
-            'id' => $cmid,
+            'id' => $cm->id,
         ];
+
+        // end db transaction
+        $transaction->allow_commit();
+
         return $update;
     }
 
@@ -1672,7 +1656,7 @@ class local_sync_service_external extends external_api
      * Obtains the Parameter which will be returned.
      * @return external_description
      */
-    public static function local_sync_service_add_new_course_module_lesson_returns()
+    public static function local_sync_service_new_course_module_lesson_returns()
     {
         return new external_single_structure(
             array(
@@ -1682,11 +1666,11 @@ class local_sync_service_external extends external_api
         );
     }
 
+
     /**
      * Defines the necessary method parameters.
      * @return external_function_parameters
      */
-
     public static function local_sync_service_update_course_module_lesson_contentpage_parameters()
     {
         return new external_function_parameters(
@@ -1694,7 +1678,7 @@ class local_sync_service_external extends external_api
                 'cmid' => new external_value(PARAM_INT, 'id of module'),
                 'pageid' => new external_value(PARAM_INT, 'pageid of lesson content'),
                 'title' => new external_value(PARAM_TEXT, 'title of lesson content page', VALUE_OPTIONAL),
-                'content' => new external_value(PARAM_TEXT, 'HTML or Markdown code'),
+                'content' => new external_value(PARAM_TEXT, 'content of lesson content page')
             )
         );
     }
@@ -1713,7 +1697,7 @@ class local_sync_service_external extends external_api
         require_once($CFG->dirroot . '/mod/' . '/lesson' . '/locallib.php');
         $warnings = array();
 
-        //debug("local_sync_service_update_course_module_lesson_contentpage\n");
+        debug("local_sync_service_update_course_module_lesson_contentpage\n");
 
         // Parameter validation.
         $params = self::validate_parameters(
