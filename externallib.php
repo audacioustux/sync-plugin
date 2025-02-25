@@ -1599,7 +1599,7 @@ class local_sync_service_external extends external_api
      * @param $beforemod Optional parameter, a Module where the new Module should be placed before.
      * @return $update Message: Successful and $cmid of the new Module.
      */
-    public static function local_sync_service_add_new_course_module_lesson($courseid, $sectionnum, $name, $content, $visible, $visibleoncoursepage, $beforemod = null)
+    public static function local_sync_service_add_new_course_module_lesson($courseid, $sectionnum, $name, $intro, $beforemod = null)
     {
         global $DB, $CFG;
         require_once($CFG->dirroot . '/mod/' . '/lesson' . '/lib.php');
@@ -1614,7 +1614,7 @@ class local_sync_service_external extends external_api
                 'courseid' => $courseid,
                 'sectionnum' => $sectionnum,
                 'name' => $name,
-                'intro' => $content,
+                'intro' => $intro,
                 'beforemod' => $beforemod,
             )
         );
