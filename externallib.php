@@ -1580,9 +1580,8 @@ class local_sync_service_external extends external_api
             array(
                 'courseid' => new external_value(PARAM_TEXT, 'id of course'),
                 'sectionnum' => new external_value(PARAM_TEXT, 'relative number of the section'),
-                'urlname' => new external_value(PARAM_TEXT, 'displayed mod name'),
+                'name' => new external_value(PARAM_TEXT, 'displayed mod name'),
                 'content' => new external_value(PARAM_TEXT, 'Content to insert'),
-                'time' => new external_value(PARAM_TEXT, 'defines the mod. visibility', VALUE_DEFAULT, null),
                 'visible' => new external_value(PARAM_TEXT, 'defines the mod. visibility'),
                 'beforemod' => new external_value(PARAM_TEXT, 'mod to set before', VALUE_DEFAULT, null),
             )
@@ -1601,7 +1600,7 @@ class local_sync_service_external extends external_api
      * @param $beforemod Optional parameter, a Module where the new Module should be placed before.
      * @return $update Message: Successful and $cmid of the new Module.
      */
-    public static function local_sync_service_add_new_course_module_lesson($courseid, $sectionnum, $urlname, $content, $time = null, $visible, $beforemod = null)
+    public static function local_sync_service_add_new_course_module_lesson($courseid, $sectionnum, $name, $content, $visible, $beforemod = null)
     {
         global $DB, $CFG;
         require_once($CFG->dirroot . '/mod/' . '/lesson' . '/lib.php');
@@ -1615,9 +1614,8 @@ class local_sync_service_external extends external_api
             array(
                 'courseid' => $courseid,
                 'sectionnum' => $sectionnum,
-                'urlname' => $urlname,
+                'name' => $name,
                 'content' => $content,
-                'time' => $time,
                 'visible' => $visible,
                 'beforemod' => $beforemod,
             )
@@ -1641,10 +1639,12 @@ class local_sync_service_external extends external_api
         $instance->course = $params['courseid'];
         $instance->section = $params['sectionnum'];
         $instance->visible = $params['visible'];
+        $instance->name = $params['name'];
         $instance->introeditor = [
             'text' => html_entity_decode($params['content']),
             'format' => \FORMAT_HTML,
         ];
+        $instance->beforemod = $params['beforemod'];
 
         // debug instance object
         debug(
