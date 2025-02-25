@@ -1641,6 +1641,10 @@ class local_sync_service_external extends external_api
         $instance->course = $params['courseid'];
         $instance->section = $params['sectionnum'];
         $instance->visible = $params['visible'];
+        $instance->introeditor = [
+            'text' => html_entity_decode($params['content']),
+            'format' => \FORMAT_HTML,
+        ];
 
         // debug instance object
         debug(
