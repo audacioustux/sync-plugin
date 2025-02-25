@@ -24,4 +24,4 @@
 defined('MOODLE_INTERNAL') || die();
 $plugin->component = 'local_sync_service';
 $plugin->version = 2025022500;
-$plugin->requires = 2025022100.00;
+$plugin->requires = 2021051704.00;
