@@ -1608,7 +1608,7 @@ class local_sync_service_external extends external_api
         $instance->name = $params['name'];
         $instance->introeditor = [
             'text' => $params['intro'],
-            'format' => \FORMAT_HTML,
+            'format' => \FORMAT_MARKDOWN,
         ];
         $instance->beforemod = $params['beforemod'];
 
